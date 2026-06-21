@@ -3,11 +3,12 @@ const multer = require('multer');
 const archiver = require('archiver');
 const { spawn } = require('child_process');
 const path = require('path');
+const ffmpegStatic = require('ffmpeg-static');
 const fs = require('fs');
 const os = require('os');
 
 const app = express();
-const FFMPEG = process.env.FFMPEG_PATH || 'ffmpeg';
+const FFMPEG = process.env.FFMPEG_PATH || ffmpegStatic || 'ffmpeg';
 
 const upload = multer({
   dest: os.tmpdir(),
