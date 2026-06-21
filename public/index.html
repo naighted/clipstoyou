@@ -1,0 +1,646 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>ClipsToYou — Divide tu video en partes</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    :root {
+      --morado: #7c6fff;
+      --morado-oscuro: #6458e0;
+      --fondo: #0a0a0a;
+      --card: #141414;
+      --borde: #222;
+      --texto: #f0f0f0;
+      --gris: #888;
+    }
+
+    body {
+      background: var(--fondo);
+      color: var(--texto);
+      font-family: 'Segoe UI', sans-serif;
+      min-height: 100vh;
+    }
+
+    /* HEADER */
+    header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 18px 40px;
+      border-bottom: 1px solid var(--borde);
+      position: sticky;
+      top: 0;
+      background: rgba(10,10,10,0.9);
+      backdrop-filter: blur(10px);
+      z-index: 100;
+    }
+
+    .logo {
+      font-size: 1.3rem;
+      font-weight: 700;
+      letter-spacing: -0.5px;
+    }
+
+    .logo span { color: var(--morado); }
+
+    .badge-gratis {
+      background: #1a1a2e;
+      border: 1px solid var(--morado);
+      color: var(--morado);
+      font-size: 0.75rem;
+      padding: 4px 10px;
+      border-radius: 99px;
+    }
+
+    /* HERO */
+    .hero {
+      text-align: center;
+      padding: 80px 20px 60px;
+      position: relative;
+      overflow: hidden;
+    }
+
+    .hero::before {
+      content: '';
+      position: absolute;
+      top: -100px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 600px;
+      height: 400px;
+      background: radial-gradient(ellipse, rgba(124,111,255,0.12) 0%, transparent 70%);
+      pointer-events: none;
+    }
+
+    .hero-etiqueta {
+      display: inline-block;
+      background: rgba(124,111,255,0.1);
+      border: 1px solid rgba(124,111,255,0.3);
+      color: var(--morado);
+      font-size: 0.8rem;
+      padding: 5px 14px;
+      border-radius: 99px;
+      margin-bottom: 20px;
+    }
+
+    .hero h1 {
+      font-size: clamp(2rem, 5vw, 3.2rem);
+      font-weight: 800;
+      line-height: 1.15;
+      margin-bottom: 16px;
+      letter-spacing: -1px;
+    }
+
+    .hero h1 span { color: var(--morado); }
+
+    .hero p {
+      color: var(--gris);
+      font-size: 1.05rem;
+      max-width: 480px;
+      margin: 0 auto 40px;
+      line-height: 1.6;
+    }
+
+    /* PASOS */
+    .pasos {
+      display: flex;
+      justify-content: center;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 50px;
+    }
+
+    .paso {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 0.85rem;
+      color: var(--gris);
+    }
+
+    .paso-num {
+      width: 22px;
+      height: 22px;
+      border-radius: 50%;
+      background: var(--morado);
+      color: #fff;
+      font-size: 0.7rem;
+      font-weight: 700;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .paso-sep { color: #333; }
+
+    /* HERRAMIENTA */
+    .herramienta {
+      max-width: 540px;
+      margin: 0 auto;
+      padding: 0 16px 80px;
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--borde);
+      border-radius: 20px;
+      padding: 32px;
+    }
+
+    .zona-subida {
+      border: 2px dashed #2a2a2a;
+      border-radius: 14px;
+      padding: 40px 20px;
+      text-align: center;
+      cursor: pointer;
+      transition: all 0.2s;
+      margin-bottom: 20px;
+    }
+
+    .zona-subida:hover, .zona-subida.arrastrando {
+      border-color: var(--morado);
+      background: rgba(124,111,255,0.04);
+    }
+
+    .zona-subida .icono { font-size: 2.2rem; margin-bottom: 10px; }
+    .zona-subida .titulo-zona { font-weight: 600; margin-bottom: 4px; }
+    .zona-subida .sub-zona { color: var(--gris); font-size: 0.82rem; }
+
+    #inputArchivo { display: none; }
+
+    .archivo-seleccionado {
+      display: none;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-bottom: 20px;
+      font-size: 0.85rem;
+    }
+
+    .archivo-fila {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+    }
+
+    .archivo-nombre {
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      color: #ccc;
+    }
+
+    .partes-estimadas {
+      display: none;
+      font-size: 0.78rem;
+      color: var(--morado);
+      margin-top: 5px;
+    }
+
+    .btn-cambiar {
+      background: none;
+      border: none;
+      color: var(--gris);
+      font-size: 0.8rem;
+      cursor: pointer;
+      white-space: nowrap;
+      text-decoration: underline;
+    }
+
+    .seccion-label {
+      font-size: 0.82rem;
+      color: var(--gris);
+      margin-bottom: 8px;
+    }
+
+    .fila-presets {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      margin-bottom: 10px;
+    }
+
+    .btn-preset {
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      color: #ccc;
+      border-radius: 8px;
+      padding: 8px 14px;
+      cursor: pointer;
+      font-size: 0.82rem;
+      transition: all 0.2s;
+    }
+
+    .btn-preset:hover { border-color: var(--morado); color: #fff; }
+    .btn-preset.activo { background: var(--morado); border-color: var(--morado); color: #fff; }
+
+    .campo {
+      width: 100%;
+      background: #1a1a1a;
+      border: 1px solid #2a2a2a;
+      border-radius: 10px;
+      color: #fff;
+      padding: 11px 14px;
+      font-size: 0.9rem;
+      margin-bottom: 24px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    .campo:focus { border-color: var(--morado); }
+    .campo::placeholder { color: #444; }
+
+    .btn-principal {
+      width: 100%;
+      background: var(--morado);
+      color: #fff;
+      border: none;
+      border-radius: 12px;
+      padding: 15px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    .btn-principal:hover:not(:disabled) {
+      background: var(--morado-oscuro);
+      transform: translateY(-1px);
+    }
+
+    .btn-principal:disabled {
+      background: #1e1e1e;
+      color: #444;
+      cursor: not-allowed;
+      transform: none;
+    }
+
+    /* PROGRESO */
+    .progreso-contenedor {
+      display: none;
+      margin-top: 20px;
+    }
+
+    .barra-fondo {
+      background: #1e1e1e;
+      border-radius: 99px;
+      height: 6px;
+      overflow: hidden;
+      margin-bottom: 8px;
+    }
+
+    .barra {
+      height: 100%;
+      background: linear-gradient(90deg, var(--morado), #a78bfa);
+      border-radius: 99px;
+      width: 0%;
+      transition: width 0.4s ease;
+    }
+
+    .progreso-texto {
+      color: var(--gris);
+      font-size: 0.82rem;
+      text-align: center;
+    }
+
+    .error {
+      display: none;
+      background: #1f0f0f;
+      border: 1px solid #5a1f1f;
+      color: #ff7070;
+      border-radius: 10px;
+      padding: 12px 16px;
+      margin-top: 14px;
+      font-size: 0.85rem;
+    }
+
+    /* COMO FUNCIONA */
+    .como-funciona {
+      padding: 60px 20px 80px;
+      text-align: center;
+      border-top: 1px solid var(--borde);
+    }
+
+    .como-funciona h2 {
+      font-size: 1.6rem;
+      font-weight: 700;
+      margin-bottom: 10px;
+    }
+
+    .como-funciona .sub {
+      color: var(--gris);
+      font-size: 0.9rem;
+      margin-bottom: 50px;
+    }
+
+    .pasos-grid {
+      display: flex;
+      justify-content: center;
+      gap: 24px;
+      flex-wrap: wrap;
+      max-width: 800px;
+      margin: 0 auto;
+    }
+
+    .paso-card {
+      background: var(--card);
+      border: 1px solid var(--borde);
+      border-radius: 16px;
+      padding: 28px 24px;
+      width: 220px;
+      text-align: center;
+    }
+
+    .paso-icono {
+      font-size: 2rem;
+      margin-bottom: 14px;
+    }
+
+    .paso-card h3 {
+      font-size: 0.95rem;
+      font-weight: 600;
+      margin-bottom: 6px;
+    }
+
+    .paso-card p {
+      color: var(--gris);
+      font-size: 0.82rem;
+      line-height: 1.5;
+    }
+
+    /* FOOTER */
+    footer {
+      border-top: 1px solid var(--borde);
+      padding: 24px 40px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+    }
+
+    footer .logo { font-size: 1rem; }
+
+    footer p {
+      color: var(--gris);
+      font-size: 0.8rem;
+    }
+
+    @media (max-width: 600px) {
+      header { padding: 14px 20px; }
+      .hero { padding: 50px 20px 40px; }
+      footer { flex-direction: column; text-align: center; }
+    }
+  </style>
+</head>
+<body>
+
+  <!-- HEADER -->
+  <header>
+    <div class="logo">Clips<span>ToYou</span></div>
+    <div class="badge-gratis">100% gratis</div>
+  </header>
+
+  <!-- HERO -->
+  <section class="hero">
+    <div class="hero-etiqueta">Sin registros. Sin marcas de agua.</div>
+    <h1>Divide tu video<br>en <span>partes iguales</span></h1>
+    <p>Sube tu video, elige la duración de cada parte y descárgalas todas de una vez. Listo para TikTok, YouTube Shorts o Instagram.</p>
+
+    <div class="pasos">
+      <div class="paso"><div class="paso-num">1</div> Sube tu video</div>
+      <div class="paso-sep">→</div>
+      <div class="paso"><div class="paso-num">2</div> Elige la duración</div>
+      <div class="paso-sep">→</div>
+      <div class="paso"><div class="paso-num">3</div> Descarga las partes</div>
+    </div>
+  </section>
+
+  <!-- HERRAMIENTA -->
+  <section class="herramienta">
+    <div class="card">
+
+      <div class="zona-subida" id="zonaSubida">
+        <div class="icono">🎬</div>
+        <div class="titulo-zona">Haz clic o arrastra tu video aquí</div>
+        <div class="sub-zona">MP4, MOV, AVI, MKV — hasta 4 GB</div>
+      </div>
+      <input type="file" id="inputArchivo" accept="video/*">
+
+      <div class="archivo-seleccionado" id="archivoSeleccionado">
+        <div class="archivo-fila">
+          <span class="archivo-nombre" id="archivoNombre"></span>
+          <button class="btn-cambiar" id="btnCambiar">Cambiar</button>
+        </div>
+        <div class="partes-estimadas" id="partesEstimadas"></div>
+      </div>
+
+      <div class="seccion-label">Duración de cada parte</div>
+      <div class="fila-presets">
+        <button class="btn-preset" data-seg="20">20 seg</button>
+        <button class="btn-preset" data-seg="60">1 min</button>
+        <button class="btn-preset" data-seg="90">1:30 min</button>
+        <button class="btn-preset" data-seg="180">3 min</button>
+      </div>
+      <input type="number" class="campo" id="duracion" placeholder="O escribe los segundos (ej: 45)" min="1">
+
+      <button class="btn-principal" id="btnDividir" disabled>Dividir video</button>
+
+      <div class="progreso-contenedor" id="progresoContenedor">
+        <div class="barra-fondo"><div class="barra" id="barra"></div></div>
+        <p class="progreso-texto" id="progresoTexto">Subiendo video...</p>
+      </div>
+
+      <div class="error" id="error"></div>
+    </div>
+  </section>
+
+  <!-- CÓMO FUNCIONA -->
+  <section class="como-funciona">
+    <h2>¿Cómo funciona?</h2>
+    <p class="sub">En menos de un minuto tienes tus clips listos</p>
+    <div class="pasos-grid">
+      <div class="paso-card">
+        <div class="paso-icono">📁</div>
+        <h3>Sube tu video</h3>
+        <p>Arrastra o selecciona el archivo desde tu PC. Hasta 4 GB.</p>
+      </div>
+      <div class="paso-card">
+        <div class="paso-icono">⏱️</div>
+        <h3>Elige la duración</h3>
+        <p>20 segundos, 1 minuto, o lo que necesites. Tú decides.</p>
+      </div>
+      <div class="paso-card">
+        <div class="paso-icono">📦</div>
+        <h3>Descarga todo</h3>
+        <p>Recibes un ZIP con todas las partes ordenadas y listas.</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- FOOTER -->
+  <footer>
+    <div class="logo">Clips<span style="color:var(--morado)">ToYou</span></div>
+    <p>© 2025 ClipsToYou — Herramienta gratuita para dividir videos</p>
+  </footer>
+
+  <script>
+    const zona = document.getElementById('zonaSubida');
+    const inputArchivo = document.getElementById('inputArchivo');
+    const archivoSeleccionado = document.getElementById('archivoSeleccionado');
+    const archivoNombre = document.getElementById('archivoNombre');
+    const partesEstimadas = document.getElementById('partesEstimadas');
+    const btnCambiar = document.getElementById('btnCambiar');
+    const campoDuracion = document.getElementById('duracion');
+    const btnDividir = document.getElementById('btnDividir');
+    const progresoContenedor = document.getElementById('progresoContenedor');
+    const barra = document.getElementById('barra');
+    const progresoTexto = document.getElementById('progresoTexto');
+    const errorDiv = document.getElementById('error');
+
+    let archivoActual = null;
+    let duracionVideo = null;
+
+    zona.addEventListener('click', () => inputArchivo.click());
+    zona.addEventListener('dragover', e => { e.preventDefault(); zona.classList.add('arrastrando'); });
+    zona.addEventListener('dragleave', () => zona.classList.remove('arrastrando'));
+    zona.addEventListener('drop', e => {
+      e.preventDefault();
+      zona.classList.remove('arrastrando');
+      const f = e.dataTransfer.files[0];
+      if (f && f.type.startsWith('video/')) seleccionar(f);
+    });
+
+    inputArchivo.addEventListener('change', () => {
+      if (inputArchivo.files[0]) seleccionar(inputArchivo.files[0]);
+    });
+
+    btnCambiar.addEventListener('click', () => {
+      archivoActual = null;
+      duracionVideo = null;
+      zona.style.display = 'block';
+      archivoSeleccionado.style.display = 'none';
+      partesEstimadas.style.display = 'none';
+      verificar();
+    });
+
+    function seleccionar(archivo) {
+      archivoActual = archivo;
+      archivoNombre.textContent = '📁 ' + archivo.name;
+      zona.style.display = 'none';
+      archivoSeleccionado.style.display = 'block';
+
+      const vid = document.createElement('video');
+      vid.preload = 'metadata';
+      vid.src = URL.createObjectURL(archivo);
+      vid.onloadedmetadata = () => {
+        duracionVideo = vid.duration;
+        URL.revokeObjectURL(vid.src);
+        actualizarPartes();
+      };
+
+      verificar();
+    }
+
+    function actualizarPartes() {
+      const seg = parseInt(campoDuracion.value);
+      if (duracionVideo && seg >= 1) {
+        const n = Math.ceil(duracionVideo / seg);
+        partesEstimadas.textContent = `→ Se crearán aproximadamente ${n} parte${n !== 1 ? 's' : ''}`;
+        partesEstimadas.style.display = 'block';
+      } else {
+        partesEstimadas.style.display = 'none';
+      }
+    }
+
+    document.querySelectorAll('.btn-preset').forEach(btn => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('activo'));
+        btn.classList.add('activo');
+        campoDuracion.value = btn.dataset.seg;
+        actualizarPartes();
+        verificar();
+      });
+    });
+
+    campoDuracion.addEventListener('input', () => {
+      document.querySelectorAll('.btn-preset').forEach(b => b.classList.remove('activo'));
+      actualizarPartes();
+      verificar();
+    });
+
+    function verificar() {
+      const seg = parseInt(campoDuracion.value);
+      btnDividir.disabled = !(archivoActual && seg >= 1);
+    }
+
+    btnDividir.addEventListener('click', () => {
+      const seg = parseInt(campoDuracion.value);
+      if (!archivoActual || !seg) return;
+
+      errorDiv.style.display = 'none';
+      btnDividir.disabled = true;
+      progresoContenedor.style.display = 'block';
+      barra.style.width = '10%';
+      progresoTexto.textContent = 'Subiendo video...';
+
+      const form = new FormData();
+      form.append('video', archivoActual);
+      form.append('duracion', seg);
+
+      const xhr = new XMLHttpRequest();
+
+      xhr.upload.addEventListener('progress', e => {
+        if (e.lengthComputable) {
+          barra.style.width = Math.round((e.loaded / e.total) * 55) + '%';
+        }
+      });
+
+      xhr.upload.addEventListener('load', () => {
+        barra.style.width = '60%';
+        progresoTexto.textContent = 'Dividiendo el video...';
+      });
+
+      xhr.addEventListener('load', () => {
+        if (xhr.status === 200) {
+          barra.style.width = '100%';
+          progresoTexto.textContent = '¡Listo! Descargando...';
+
+          const blob = new Blob([xhr.response], { type: 'application/zip' });
+          const url = URL.createObjectURL(blob);
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = 'partes.zip';
+          a.click();
+          URL.revokeObjectURL(url);
+
+          setTimeout(() => {
+            progresoContenedor.style.display = 'none';
+            barra.style.width = '0%';
+            btnDividir.disabled = false;
+          }, 3000);
+        } else {
+          mostrarError('Error al procesar el video. Inténtalo de nuevo.');
+        }
+      });
+
+      xhr.addEventListener('error', () => mostrarError('No se pudo conectar con el servidor.'));
+      xhr.open('POST', '/dividir');
+      xhr.responseType = 'blob';
+      xhr.send(form);
+    });
+
+    function mostrarError(msg) {
+      errorDiv.textContent = '❌ ' + msg;
+      errorDiv.style.display = 'block';
+      progresoContenedor.style.display = 'none';
+      btnDividir.disabled = false;
+    }
+  </script>
+</body>
+</html>
