@@ -126,7 +126,15 @@ app.post('/crear-checkout', async (req, res) => {
     const session = await stripe.checkout.sessions.create({
       mode: 'subscription',
       payment_method_types: ['card'],
-      line_items: [{ price: PRECIO_PRO, quantity: 1 }],
+      line_items: [{
+        price_data: {
+          currency: 'eur',
+          product_data: { name: 'ClipsToYou Pro' },
+          unit_amount: 499,
+          recurring: { interval: 'month' },
+        },
+        quantity: 1,
+      }],
       customer_email: req.user.email,
       metadata: { usuario_id: req.user.id },
       success_url: `${BASE}/?pago=ok`,
