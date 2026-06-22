@@ -1204,7 +1204,7 @@
         if (data.url) {
           window.location.href = data.url;
         } else {
-          alert(idioma === 'es' ? 'Error al iniciar el pago. Inténtalo de nuevo.' : 'Payment error. Please try again.');
+          alert('Error: ' + (data.error || 'Sin URL de pago'));
           if (btn) { btn.textContent = textoOriginal; btn.disabled = false; }
         }
       } catch (err) {
