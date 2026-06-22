@@ -756,7 +756,7 @@
             <div class="upgrade-feat" id="upF2">Archivos de hasta 4 GB</div>
             <div class="upgrade-feat" id="upF3">Soporte prioritario</div>
           </div>
-          <button class="btn-upgrade" id="btnUpgrade" onclick="irACheckout()">⚡ Upgrade a Pro — 4,99€/mes</button>
+          <button class="btn-upgrade" id="btnUpgrade" onclick="irACheckout(event)">⚡ Upgrade a Pro — 4,99€/mes</button>
           <p class="up-vuelve" id="upVuelve">O vuelve mañana para más videos gratis</p>
         </div>
 
@@ -797,7 +797,7 @@
           <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="pp4">Sin límite diario</span></div>
           <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="pp5">Acceso anticipado a novedades</span></div>
         </div>
-        <button class="btn-plan btn-plan-pro" onclick="irACheckout()" style="cursor:pointer;opacity:1;" data-i18n="btnPro">⚡ Suscribirse — 4,99€/mes</button>
+        <button class="btn-plan btn-plan-pro" onclick="irACheckout(event)" style="cursor:pointer;opacity:1;" data-i18n="btnPro">⚡ Suscribirse — 4,99€/mes</button>
       </div>
 
     </div>
@@ -856,7 +856,7 @@
         footerDesc: 'Herramienta gratuita para dividir videos',
         preciosTitulo: 'Planes y precios', preciosSub: 'Empieza gratis, actualiza cuando quieras',
         planPer: '/mes', planFreeDesc: 'Para probar sin compromiso', planProDesc: 'Para creadores de contenido',
-        planProBadge: '✨ Más popular', btnFree: 'Empezar gratis', btnPro: '⚡ Próximamente',
+        planProBadge: '✨ Más popular', btnFree: 'Empezar gratis', btnPro: '⚡ Suscribirse — 4,99€/mes',
         pf1: '3 videos al día', pf2: 'Archivos hasta 4 GB', pf3: 'ZIP con todas las partes',
         pf4: 'Sin límite diario', pf5: 'Novedades anticipadas',
         pp1: 'Videos ilimitados al día', pp2: 'Archivos hasta 4 GB', pp3: 'ZIP con todas las partes',
@@ -884,7 +884,7 @@
         footerDesc: 'Free tool to split videos',
         preciosTitulo: 'Plans & pricing', preciosSub: 'Start free, upgrade anytime',
         planPer: '/mo', planFreeDesc: 'Try it with no commitment', planProDesc: 'For content creators',
-        planProBadge: '✨ Most popular', btnFree: 'Get started free', btnPro: '⚡ Coming soon',
+        planProBadge: '✨ Most popular', btnFree: 'Get started free', btnPro: '⚡ Subscribe — €4.99/mo',
         pf1: '3 videos per day', pf2: 'Files up to 4 GB', pf3: 'ZIP with all parts',
         pf4: 'No daily limit', pf5: 'Early access to new features',
         pp1: 'Unlimited videos per day', pp2: 'Files up to 4 GB', pp3: 'ZIP with all parts',
@@ -1190,17 +1190,27 @@
 
     cargarUsuario();
 
-    async function irACheckout() {
+    async function irACheckout(e) {
       if (!usuarioActual || !usuarioActual.autenticado) {
         window.location.href = '/auth/google';
         return;
       }
-      const btn = event.target;
-      btn.textContent = idioma === 'es' ? 'Redirigiendo...' : 'Redirecting...';
-      btn.disabled = true;
-      const res = await fetch('/crear-checkout', { method: 'POST' });
-      const data = await res.json();
-      if (data.url) window.location.href = data.url;
+      const btn = (e && e.target) ? e.target : document.querySelector('[onclick*="irACheckout"]');
+      const textoOriginal = btn ? btn.textContent : '';
+      if (btn) { btn.textContent = idioma === 'es' ? 'Redirigiendo...' : 'Redirecting...'; btn.disabled = true; }
+      try {
+        const res = await fetch('/crear-checkout', { method: 'POST' });
+        const data = await res.json();
+        if (data.url) {
+          window.location.href = data.url;
+        } else {
+          alert(idioma === 'es' ? 'Error al iniciar el pago. Inténtalo de nuevo.' : 'Payment error. Please try again.');
+          if (btn) { btn.textContent = textoOriginal; btn.disabled = false; }
+        }
+      } catch (err) {
+        alert(idioma === 'es' ? 'Error de conexión. Inténtalo de nuevo.' : 'Connection error. Please try again.');
+        if (btn) { btn.textContent = textoOriginal; btn.disabled = false; }
+      }
     }
 
     // Mostrar mensaje si vuelve de pago
