@@ -122,17 +122,21 @@ app.post('/crear-checkout', async (req, res) => {
     ? process.env.CALLBACK_URL.replace('/auth/google/callback', '')
     : 'http://localhost:3000';
 
-  const session = await stripe.checkout.sessions.create({
-    mode: 'subscription',
-    payment_method_types: ['card'],
-    line_items: [{ price: PRECIO_PRO, quantity: 1 }],
-    customer_email: req.user.email,
-    metadata: { usuario_id: req.user.id },
-    success_url: `${BASE}/?pago=ok`,
-    cancel_url: `${BASE}/?pago=cancelado`,
-  });
-
-  res.json({ url: session.url });
+  try {
+    const session = await stripe.checkout.sessions.create({
+      mode: 'subscription',
+      payment_method_types: ['card'],
+      line_items: [{ price: PRECIO_PRO, quantity: 1 }],
+      customer_email: req.user.email,
+      metadata: { usuario_id: req.user.id },
+      success_url: `${BASE}/?pago=ok`,
+      cancel_url: `${BASE}/?pago=cancelado`,
+    });
+    res.json({ url: session.url });
+  } catch (err) {
+    console.error('Error Stripe checkout:', err.message);
+    res.status(500).json({ error: err.message });
+  }
 });
 
 // Webhook de Stripe (suscripción activada/cancelada)
