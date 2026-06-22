@@ -756,7 +756,7 @@
             <div class="upgrade-feat" id="upF2">Archivos de hasta 4 GB</div>
             <div class="upgrade-feat" id="upF3">Soporte prioritario</div>
           </div>
-          <button class="btn-upgrade" id="btnUpgrade" onclick="document.getElementById('precios').scrollIntoView({behavior:'smooth'})">⚡ Ver plan Pro</button>
+          <button class="btn-upgrade" id="btnUpgrade" onclick="irACheckout()">⚡ Upgrade a Pro — 4,99€/mes</button>
           <p class="up-vuelve" id="upVuelve">O vuelve mañana para más videos gratis</p>
         </div>
 
@@ -797,7 +797,7 @@
           <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="pp4">Sin límite diario</span></div>
           <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="pp5">Acceso anticipado a novedades</span></div>
         </div>
-        <button class="btn-plan btn-plan-pro" data-i18n="btnPro">⚡ Próximamente</button>
+        <button class="btn-plan btn-plan-pro" onclick="irACheckout()" style="cursor:pointer;opacity:1;" data-i18n="btnPro">⚡ Suscribirse — 4,99€/mes</button>
       </div>
 
     </div>
@@ -1189,6 +1189,30 @@
     }
 
     cargarUsuario();
+
+    async function irACheckout() {
+      if (!usuarioActual || !usuarioActual.autenticado) {
+        window.location.href = '/auth/google';
+        return;
+      }
+      const btn = event.target;
+      btn.textContent = idioma === 'es' ? 'Redirigiendo...' : 'Redirecting...';
+      btn.disabled = true;
+      const res = await fetch('/crear-checkout', { method: 'POST' });
+      const data = await res.json();
+      if (data.url) window.location.href = data.url;
+    }
+
+    // Mostrar mensaje si vuelve de pago
+    const params = new URLSearchParams(window.location.search);
+    if (params.get('pago') === 'ok') {
+      setTimeout(() => cargarUsuario(), 1000);
+      const msg = document.createElement('div');
+      msg.style = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1a2e1a;border:1px solid #6fcf97;color:#6fcf97;padding:14px 24px;border-radius:12px;z-index:999;font-size:0.9rem;';
+      msg.textContent = '✅ ¡Suscripción Pro activada! Gracias.';
+      document.body.appendChild(msg);
+      setTimeout(() => msg.remove(), 5000);
+    }
   </script>
 </body>
 </html>
