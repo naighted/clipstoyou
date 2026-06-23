@@ -1,0 +1,179 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admin — ClipsToYou</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { background: #0d0d0d; color: #fff; font-family: 'Inter', system-ui, sans-serif; padding: 24px; min-height: 100vh; }
+
+    .top-bar { display: flex; align-items: center; justify-content: space-between; margin-bottom: 32px; }
+    .logo { font-size: 1.4rem; font-weight: 700; }
+    .logo span { color: #7c6fff; }
+    .top-bar a { color: #aaa; font-size: 0.85rem; text-decoration: none; }
+    .top-bar a:hover { color: #fff; }
+
+    h2 { font-size: 1.1rem; font-weight: 600; margin-bottom: 16px; color: #eee; border-bottom: 1px solid #222; padding-bottom: 10px; }
+
+    /* STAT CARDS */
+    .stats { display: flex; gap: 16px; margin-bottom: 36px; flex-wrap: wrap; }
+    .stat { background: #161616; border: 1px solid #262626; border-radius: 12px; padding: 20px 24px; flex: 1; min-width: 140px; }
+    .stat .label { font-size: 0.75rem; color: #888; margin-bottom: 6px; text-transform: uppercase; letter-spacing: 0.05em; }
+    .stat .val { font-size: 2rem; font-weight: 700; }
+    .stat.pro .val { color: #7c6fff; }
+    .stat.clips .val { color: #f97316; }
+
+    /* USERS TABLE */
+    .section { margin-bottom: 40px; }
+    .table-wrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+    thead tr { background: #161616; }
+    th { text-align: left; padding: 10px 14px; color: #888; font-weight: 500; font-size: 0.78rem; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #222; }
+    td { padding: 10px 14px; border-bottom: 1px solid #1a1a1a; }
+    tr:hover td { background: #111; }
+    .badge { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 600; }
+    .badge.pro { background: rgba(124,111,255,0.2); color: #a78bfa; }
+    .badge.free { background: rgba(255,255,255,0.07); color: #888; }
+    .num { font-variant-numeric: tabular-nums; }
+
+    /* SUGGESTIONS */
+    .sug-list { display: flex; flex-direction: column; gap: 12px; }
+    .sug-card { background: #141414; border: 1px solid #232323; border-radius: 10px; padding: 16px 18px; }
+    .sug-card.leida { opacity: 0.5; }
+    .sug-meta { display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap; }
+    .sug-nombre { font-weight: 600; font-size: 0.88rem; }
+    .sug-email { font-size: 0.78rem; color: #666; }
+    .sug-fecha { font-size: 0.75rem; color: #555; margin-left: auto; }
+    .sug-texto { color: #ccc; font-size: 0.88rem; line-height: 1.5; }
+    .sug-nueva { display: inline-block; width: 8px; height: 8px; background: #7c6fff; border-radius: 50%; flex-shrink: 0; }
+    .btn-leida { margin-top: 10px; background: none; border: 1px solid #333; color: #888; padding: 4px 12px; border-radius: 6px; font-size: 0.75rem; cursor: pointer; }
+    .btn-leida:hover { border-color: #7c6fff; color: #a78bfa; }
+
+    .empty { color: #555; font-size: 0.85rem; padding: 20px 0; }
+    .loading { color: #555; font-size: 0.85rem; }
+
+    .filtro-bar { display: flex; gap: 10px; margin-bottom: 14px; align-items: center; }
+    .filtro-bar select { background: #161616; border: 1px solid #2a2a2a; color: #ccc; padding: 6px 10px; border-radius: 8px; font-size: 0.82rem; }
+    .search { background: #161616; border: 1px solid #2a2a2a; color: #ccc; padding: 6px 12px; border-radius: 8px; font-size: 0.82rem; width: 220px; }
+    .search::placeholder { color: #555; }
+  </style>
+</head>
+<body>
+
+<div class="top-bar">
+  <div class="logo">Clips<span>To</span>You <span style="font-size:0.75rem;color:#555;font-weight:400;">Admin</span></div>
+  <a href="/">← Volver a la web</a>
+</div>
+
+<!-- STATS -->
+<div class="stats">
+  <div class="stat"><div class="label">Total usuarios</div><div class="val" id="sTotal">…</div></div>
+  <div class="stat pro"><div class="label">Suscriptores Pro</div><div class="val" id="sPro">…</div></div>
+  <div class="stat"><div class="label">Plan Free</div><div class="val" id="sFree">…</div></div>
+  <div class="stat clips"><div class="label">Clips generados (total)</div><div class="val" id="sClips">…</div></div>
+</div>
+
+<!-- USERS -->
+<div class="section">
+  <h2>Usuarios</h2>
+  <div class="filtro-bar">
+    <input class="search" id="buscar" type="text" placeholder="Buscar por nombre o email…" oninput="filtrarTabla()">
+    <select id="filtroPlan" onchange="filtrarTabla()">
+      <option value="">Todos los planes</option>
+      <option value="pro">Pro</option>
+      <option value="free">Free</option>
+    </select>
+  </div>
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>Nombre</th><th>Email</th><th>Plan</th><th>Clips hoy</th><th>Clips totales</th>
+      </tr></thead>
+      <tbody id="tablaBody"><tr><td colspan="5" class="loading">Cargando…</td></tr></tbody>
+    </table>
+  </div>
+</div>
+
+<!-- SUGGESTIONS -->
+<div class="section">
+  <h2>Buzón de sugerencias <span id="numNuevas" style="font-size:0.78rem;color:#7c6fff;font-weight:500;"></span></h2>
+  <div class="sug-list" id="sugList"><div class="loading">Cargando…</div></div>
+</div>
+
+<script>
+  let todosUsuarios = [];
+
+  async function cargarStats() {
+    const r = await fetch('/api/admin/stats');
+    if (r.status === 403) { document.body.innerHTML = '<p style="padding:40px;color:#f00">Acceso denegado</p>'; return; }
+    const d = await r.json();
+    document.getElementById('sTotal').textContent = d.totalUsuarios;
+    document.getElementById('sPro').textContent = d.totalPro;
+    document.getElementById('sFree').textContent = d.totalFree;
+    document.getElementById('sClips').textContent = d.totalClips;
+    todosUsuarios = d.usuarios || [];
+    renderTabla(todosUsuarios);
+  }
+
+  function renderTabla(usuarios) {
+    const tbody = document.getElementById('tablaBody');
+    if (!usuarios.length) { tbody.innerHTML = '<tr><td colspan="5" class="empty">Sin usuarios.</td></tr>'; return; }
+    tbody.innerHTML = usuarios.map(u => `
+      <tr>
+        <td>${esc(u.nombre || '-')}</td>
+        <td style="color:#888">${esc(u.email || '-')}</td>
+        <td><span class="badge ${u.plan === 'pro' ? 'pro' : 'free'}">${u.plan === 'pro' ? '⚡ Pro' : 'Free'}</span></td>
+        <td class="num">${u.usos_hoy || 0}</td>
+        <td class="num" style="font-weight:600">${u.total_usos || 0}</td>
+      </tr>
+    `).join('');
+  }
+
+  function filtrarTabla() {
+    const q = document.getElementById('buscar').value.toLowerCase();
+    const plan = document.getElementById('filtroPlan').value;
+    const filtrados = todosUsuarios.filter(u => {
+      const matchQ = !q || (u.nombre || '').toLowerCase().includes(q) || (u.email || '').toLowerCase().includes(q);
+      const matchPlan = !plan || u.plan === plan;
+      return matchQ && matchPlan;
+    });
+    renderTabla(filtrados);
+  }
+
+  async function cargarSugerencias() {
+    const r = await fetch('/api/admin/sugerencias');
+    const sugs = await r.json();
+    const nuevas = sugs.filter(s => !s.leida).length;
+    document.getElementById('numNuevas').textContent = nuevas > 0 ? `(${nuevas} nuevas)` : '';
+    const container = document.getElementById('sugList');
+    if (!sugs.length) { container.innerHTML = '<div class="empty">No hay sugerencias todavía.</div>'; return; }
+    container.innerHTML = sugs.map(s => `
+      <div class="sug-card ${s.leida ? 'leida' : ''}" id="sug-${s.id}">
+        <div class="sug-meta">
+          ${!s.leida ? '<span class="sug-nueva"></span>' : ''}
+          <span class="sug-nombre">${esc(s.nombre || 'Anónimo')}</span>
+          <span class="sug-email">${esc(s.email || '')}</span>
+          <span class="sug-fecha">${new Date(s.fecha).toLocaleString('es-ES', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' })}</span>
+        </div>
+        <div class="sug-texto">${esc(s.texto)}</div>
+        ${!s.leida ? `<button class="btn-leida" onclick="marcarLeida('${s.id}')">✓ Marcar como leída</button>` : ''}
+      </div>
+    `).join('');
+  }
+
+  async function marcarLeida(id) {
+    await fetch('/api/admin/sugerencias/' + id, { method: 'PATCH' });
+    document.getElementById('sug-' + id)?.classList.add('leida');
+    document.querySelector('#sug-' + id + ' .btn-leida')?.remove();
+    document.querySelector('#sug-' + id + ' .sug-nueva')?.remove();
+    cargarSugerencias(); // refresh count
+  }
+
+  function esc(s) { return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;'); }
+
+  cargarStats();
+  cargarSugerencias();
+</script>
+</body>
+</html>

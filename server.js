@@ -114,6 +114,49 @@ app.get('/api/usuario', async (req, res) => {
   });
 });
 
+// ─── ADMIN ───────────────────────────────────────────────────────
+const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'felixfernandezcardenas@hotmail.com';
+function esAdmin(req, res, next) {
+  if (!req.user || req.user.email !== ADMIN_EMAIL) return res.status(403).json({ error: 'Acceso denegado' });
+  next();
+}
+
+app.get('/admin', (req, res) => {
+  if (!req.user || req.user.email !== ADMIN_EMAIL) return res.redirect('/');
+  res.sendFile(path.join(__dirname, 'public', 'admin.html'));
+});
+
+app.get('/api/admin/stats', esAdmin, async (req, res) => {
+  const { data: usuarios } = await supabase
+    .from('usuarios').select('id, nombre, email, plan, usos_hoy, total_usos, conversion_gratis_usada')
+    .order('total_usos', { ascending: false, nullsFirst: false });
+  const total = usuarios?.length || 0;
+  const pro = usuarios?.filter(u => u.plan === 'pro').length || 0;
+  const totalClips = usuarios?.reduce((s, u) => s + (u.total_usos || 0), 0) || 0;
+  res.json({ usuarios: usuarios || [], totalUsuarios: total, totalPro: pro, totalFree: total - pro, totalClips });
+});
+
+app.get('/api/admin/sugerencias', esAdmin, async (req, res) => {
+  const { data } = await supabase.from('sugerencias').select('*').order('fecha', { ascending: false });
+  res.json(data || []);
+});
+
+app.patch('/api/admin/sugerencias/:id', esAdmin, async (req, res) => {
+  await supabase.from('sugerencias').update({ leida: true }).eq('id', req.params.id);
+  res.json({ ok: true });
+});
+
+app.post('/api/sugerencia', express.json(), async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Debes iniciar sesión.' });
+  const texto = (req.body?.texto || '').trim();
+  if (texto.length < 5) return res.status(400).json({ error: 'Escribe al menos 5 caracteres.' });
+  if (texto.length > 1000) return res.status(400).json({ error: 'Máximo 1000 caracteres.' });
+  await supabase.from('sugerencias').insert([{
+    usuario_id: req.user.id, nombre: req.user.nombre, email: req.user.email, texto
+  }]);
+  res.json({ ok: true });
+});
+
 // Crear sesión de pago Stripe
 app.post('/crear-checkout', async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'No autenticado' });
@@ -328,9 +371,9 @@ app.post('/dividir', upload.single('video'), async (req, res) => {
     const partes = fs.readdirSync(outputDir).filter(f => f.endsWith('.mp4')).sort();
     if (partes.length === 0) return res.status(500).json({ error: 'No se generaron partes.' });
 
-    await supabase
-      .from('usuarios')
-      .update({ usos_hoy: usos + 1, ultimo_reset: hoy })
+    const { data: u } = await supabase.from('usuarios').select('total_usos').eq('id', req.user.id).single();
+    await supabase.from('usuarios')
+      .update({ usos_hoy: usos + 1, ultimo_reset: hoy, total_usos: (u?.total_usos || 0) + 1 })
       .eq('id', req.user.id);
 
     res.setHeader('Content-Type', 'application/zip');

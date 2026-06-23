@@ -1341,6 +1341,7 @@
       if (btn) { btn.textContent = idioma === 'es' ? 'Redirigiendo...' : 'Redirecting...'; btn.disabled = true; }
       try {
         const res = await fetch('/crear-checkout', { method: 'POST' });
+        if (res.status === 401) { window.location.href = '/auth/google'; return; }
         const data = await res.json();
         if (data.url) {
           window.location.href = data.url;
@@ -1598,6 +1599,73 @@
       document.body.appendChild(msg);
       setTimeout(() => msg.remove(), 5000);
     }
+  </script>
+
+  <!-- BOTÓN SUGERENCIAS -->
+  <button id="btnSug" onclick="abrirSugerencia()" title="Enviar sugerencia" style="
+    position:fixed; bottom:24px; right:24px; z-index:900;
+    background:#1a1a2e; border:1px solid #7c6fff; color:#a78bfa;
+    border-radius:99px; padding:10px 18px; font-size:0.82rem; font-weight:600;
+    cursor:pointer; display:flex; align-items:center; gap:7px; box-shadow:0 4px 20px rgba(124,111,255,0.2);
+    transition:background 0.2s;">
+    💡 Sugerir
+  </button>
+
+  <!-- MODAL SUGERENCIAS -->
+  <div id="modalSug" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.7);z-index:1000;align-items:center;justify-content:center;">
+    <div style="background:#141414;border:1px solid #2a2a2a;border-radius:16px;padding:28px;width:90%;max-width:480px;position:relative;">
+      <button onclick="cerrarSugerencia()" style="position:absolute;top:14px;right:16px;background:none;border:none;color:#666;font-size:1.3rem;cursor:pointer;">✕</button>
+      <h3 style="margin-bottom:6px;font-size:1rem;">💡 Enviar sugerencia</h3>
+      <p style="color:#888;font-size:0.82rem;margin-bottom:16px;">¿Tienes una idea para mejorar ClipsToYou? Cuéntame.</p>
+      <textarea id="textoSug" placeholder="Escribe tu sugerencia aquí..." style="
+        width:100%;height:120px;background:#1a1a1a;border:1px solid #333;color:#fff;
+        border-radius:10px;padding:12px;font-size:0.88rem;resize:vertical;font-family:inherit;"></textarea>
+      <div id="msgSug" style="font-size:0.8rem;margin-top:8px;min-height:18px;"></div>
+      <button onclick="enviarSugerencia()" id="btnEnviarSug" style="
+        margin-top:12px;width:100%;padding:11px;background:#7c6fff;border:none;color:#fff;
+        border-radius:10px;font-size:0.9rem;font-weight:600;cursor:pointer;">Enviar</button>
+    </div>
+  </div>
+
+  <script>
+    function abrirSugerencia() {
+      if (!usuarioActual || !usuarioActual.autenticado) {
+        if (confirm('Necesitas iniciar sesión para enviar sugerencias. ¿Iniciar sesión ahora?')) window.location.href = '/auth/google';
+        return;
+      }
+      document.getElementById('modalSug').style.display = 'flex';
+      document.getElementById('textoSug').focus();
+    }
+    function cerrarSugerencia() {
+      document.getElementById('modalSug').style.display = 'none';
+      document.getElementById('textoSug').value = '';
+      document.getElementById('msgSug').textContent = '';
+    }
+    async function enviarSugerencia() {
+      const texto = document.getElementById('textoSug').value.trim();
+      if (texto.length < 5) { document.getElementById('msgSug').style.color = '#f97316'; document.getElementById('msgSug').textContent = 'Escribe al menos 5 caracteres.'; return; }
+      const btn = document.getElementById('btnEnviarSug');
+      btn.disabled = true; btn.textContent = 'Enviando...';
+      try {
+        const r = await fetch('/api/sugerencia', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ texto }) });
+        const d = await r.json();
+        if (r.ok) {
+          document.getElementById('msgSug').style.color = '#6fcf97';
+          document.getElementById('msgSug').textContent = '✅ ¡Sugerencia enviada! Gracias.';
+          btn.textContent = 'Enviado ✓';
+          setTimeout(() => cerrarSugerencia(), 1800);
+        } else {
+          document.getElementById('msgSug').style.color = '#f97316';
+          document.getElementById('msgSug').textContent = d.error || 'Error al enviar.';
+          btn.disabled = false; btn.textContent = 'Enviar';
+        }
+      } catch(e) {
+        document.getElementById('msgSug').style.color = '#f97316';
+        document.getElementById('msgSug').textContent = 'Error de conexión.';
+        btn.disabled = false; btn.textContent = 'Enviar';
+      }
+    }
+    document.getElementById('modalSug').addEventListener('click', e => { if (e.target === document.getElementById('modalSug')) cerrarSugerencia(); });
   </script>
 </body>
 </html>
