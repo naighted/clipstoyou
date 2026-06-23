@@ -600,6 +600,78 @@
     .paso-card h3 { font-size: 0.92rem; font-weight: 600; margin-bottom: 6px; }
     .paso-card p { color: var(--gris); font-size: 0.8rem; line-height: 1.5; }
 
+    /* TABS HERRAMIENTA */
+    .tabs-herramienta {
+      display: flex;
+      background: #1a1a1a;
+      border: 1px solid var(--borde);
+      border-radius: 10px;
+      padding: 3px;
+      margin-bottom: 20px;
+      gap: 2px;
+    }
+    .tab-btn {
+      flex: 1;
+      background: none;
+      border: none;
+      color: var(--gris);
+      font-size: 0.82rem;
+      font-weight: 600;
+      padding: 7px 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: all 0.2s;
+    }
+    .tab-btn.activo {
+      background: var(--morado);
+      color: #fff;
+    }
+
+    /* CONVERTIDOR 9:16 */
+    #panelConvertir { display: none; }
+    .canvas-wrap {
+      position: relative;
+      margin-bottom: 14px;
+      border-radius: 10px;
+      overflow: hidden;
+      background: #111;
+      cursor: crosshair;
+    }
+    #canvasFrame { display: block; width: 100%; height: auto; }
+    .sel-btns {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 12px;
+    }
+    .btn-sel {
+      flex: 1;
+      padding: 8px;
+      border-radius: 8px;
+      border: 2px solid transparent;
+      font-size: 0.8rem;
+      font-weight: 600;
+      cursor: pointer;
+      background: #1a1a1a;
+      color: #ccc;
+      transition: all 0.2s;
+    }
+    .btn-sel.arriba.activo { border-color: #7c6fff; color: #7c6fff; background: rgba(124,111,255,0.1); }
+    .btn-sel.abajo.activo  { border-color: #f97316; color: #f97316; background: rgba(249,115,22,0.1); }
+    .sel-info {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 14px;
+      font-size: 0.78rem;
+    }
+    .sel-badge {
+      padding: 4px 10px;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .sel-badge.arriba { background: rgba(124,111,255,0.15); color: #7c6fff; }
+    .sel-badge.abajo  { background: rgba(249,115,22,0.15);  color: #f97316; }
+    .sel-badge.vacio  { background: #1a1a1a; color: var(--gris); }
+
     /* FOOTER */
     footer {
       border-top: 1px solid var(--borde);
@@ -682,6 +754,15 @@
     <section class="herramienta">
       <div class="card">
 
+        <!-- TABS -->
+        <div class="tabs-herramienta">
+          <button class="tab-btn activo" id="tabDividir" onclick="cambiarTab('dividir')">✂️ Dividir video</button>
+          <button class="tab-btn" id="tabConvertir" onclick="cambiarTab('convertir')">📱 Convertir a 9:16</button>
+        </div>
+
+        <!-- PANEL DIVIDIR -->
+        <div id="panelDividir">
+
         <!-- AVISO LOGIN -->
         <div class="aviso-login" id="avisoLogin" style="display:none;">
           <span data-i18n="avisoLoginTexto">Inicia sesión gratis para dividir tus videos.</span>
@@ -759,6 +840,53 @@
           <button class="btn-upgrade" id="btnUpgrade" onclick="irACheckout(event)">⚡ Upgrade a Pro — 4,99€/mes</button>
           <p class="up-vuelve" id="upVuelve">O vuelve mañana para más videos gratis</p>
         </div>
+
+        </div> <!-- fin panelDividir -->
+
+        <!-- PANEL CONVERTIR 9:16 -->
+        <div id="panelConvertir">
+
+          <div class="zona-subida" id="zonaSubida916" onclick="document.getElementById('inputVideo916').click()">
+            <div class="icono">📱</div>
+            <div class="z-titulo">Haz clic o arrastra tu video aquí</div>
+            <div class="z-sub">Video horizontal (16:9) → salida vertical (9:16)</div>
+          </div>
+          <input type="file" id="inputVideo916" accept="video/*" style="display:none">
+
+          <div id="editor916" style="display:none">
+            <p style="font-size:0.8rem;color:var(--gris);margin-bottom:10px;">Selecciona qué zona va <strong style="color:#7c6fff">arriba</strong> (reacción/webcam) y qué zona va <strong style="color:#f97316">abajo</strong> (gameplay/contenido).</p>
+
+            <div class="sel-btns">
+              <button class="btn-sel arriba" id="btnSelArriba" onclick="activarSel('arriba')">⬆️ Zona ARRIBA</button>
+              <button class="btn-sel abajo"  id="btnSelAbajo"  onclick="activarSel('abajo')">⬇️ Zona ABAJO</button>
+            </div>
+
+            <div class="canvas-wrap" id="canvasWrap">
+              <canvas id="canvasFrame"></canvas>
+            </div>
+
+            <div class="sel-info">
+              <span class="sel-badge arriba" id="badgeArriba">⬆️ Arriba: sin seleccionar</span>
+              <span class="sel-badge abajo"  id="badgeAbajo">⬇️ Abajo: sin seleccionar</span>
+            </div>
+
+            <button class="btn-principal" id="btnConvertir916" disabled onclick="convertir916()">Convertir a 9:16</button>
+            <div class="progreso-contenedor" id="progreso916Cont" style="display:none">
+              <div class="barra-fondo"><div class="barra" id="barra916" style="width:0%"></div></div>
+              <p class="progreso-texto" id="progreso916Txt">Convirtiendo...</p>
+            </div>
+            <div class="error-box" id="errorBox916"></div>
+
+            <div id="resultado916" style="display:none;margin-top:14px;text-align:center;">
+              <p style="color:#6fcf97;margin-bottom:12px;font-size:0.9rem;">✅ ¡Video convertido!</p>
+              <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+                <a id="linkDescarga916" class="btn-principal" style="text-decoration:none;display:inline-block;padding:10px 20px;">⬇️ Descargar 9:16</a>
+                <button class="btn-principal" style="background:#1a1a2e;border:1px solid var(--morado);" onclick="usarEn916EnDividir()">✂️ Dividir en partes</button>
+              </div>
+            </div>
+          </div>
+
+        </div> <!-- fin panelConvertir -->
 
       </div>
     </section>
@@ -1211,6 +1339,227 @@
         alert(idioma === 'es' ? 'Error de conexión. Inténtalo de nuevo.' : 'Connection error. Please try again.');
         if (btn) { btn.textContent = textoOriginal; btn.disabled = false; }
       }
+    }
+
+    // ─── TABS ─────────────────────────────────────────────────
+    function cambiarTab(tab) {
+      document.getElementById('panelDividir').style.display = tab === 'dividir' ? '' : 'none';
+      document.getElementById('panelConvertir').style.display = tab === 'convertir' ? '' : 'none';
+      document.getElementById('tabDividir').classList.toggle('activo', tab === 'dividir');
+      document.getElementById('tabConvertir').classList.toggle('activo', tab === 'convertir');
+    }
+
+    // ─── CONVERTIDOR 9:16 ─────────────────────────────────────
+    let selMode916 = null;
+    let zonaArriba = null, zonaAbajo = null;
+    let isDrawing = false, startX, startY;
+    let videoFile916 = null;
+    let videoNativeW = 1, videoNativeH = 1;
+    let blob916 = null;
+
+    const inputVideo916 = document.getElementById('inputVideo916');
+    const zonaSubida916 = document.getElementById('zonaSubida916');
+    const canvasFrame = document.getElementById('canvasFrame');
+    const ctx916 = canvasFrame.getContext('2d');
+
+    inputVideo916.addEventListener('change', e => {
+      const file = e.target.files[0];
+      if (!file) return;
+      videoFile916 = file;
+      cargarFrame916(file);
+    });
+
+    zonaSubida916.addEventListener('dragover', e => { e.preventDefault(); zonaSubida916.classList.add('arrastrando'); });
+    zonaSubida916.addEventListener('dragleave', () => zonaSubida916.classList.remove('arrastrando'));
+    zonaSubida916.addEventListener('drop', e => {
+      e.preventDefault();
+      zonaSubida916.classList.remove('arrastrando');
+      const file = e.dataTransfer.files[0];
+      if (file && file.type.startsWith('video/')) { videoFile916 = file; cargarFrame916(file); }
+    });
+
+    function cargarFrame916(file) {
+      const url = URL.createObjectURL(file);
+      const vid = document.createElement('video');
+      vid.src = url;
+      vid.muted = true;
+      vid.currentTime = 1;
+      vid.addEventListener('seeked', () => {
+        videoNativeW = vid.videoWidth;
+        videoNativeH = vid.videoHeight;
+        canvasFrame.width = videoNativeW;
+        canvasFrame.height = videoNativeH;
+        ctx916.drawImage(vid, 0, 0);
+        URL.revokeObjectURL(url);
+        zonaArriba = null; zonaAbajo = null;
+        actualizarBadges916();
+        document.getElementById('editor916').style.display = '';
+        zonaSubida916.style.display = 'none';
+        document.getElementById('resultado916').style.display = 'none';
+        document.getElementById('errorBox916').style.display = 'none';
+      });
+      vid.load();
+    }
+
+    function activarSel(modo) {
+      selMode916 = modo;
+      document.getElementById('btnSelArriba').classList.toggle('activo', modo === 'arriba');
+      document.getElementById('btnSelAbajo').classList.toggle('activo', modo === 'abajo');
+    }
+
+    function redibujar916() {
+      const img = new Image();
+      img.src = canvasFrame.toDataURL();
+      img.onload = () => {
+        ctx916.clearRect(0, 0, canvasFrame.width, canvasFrame.height);
+        ctx916.drawImage(img, 0, 0);
+        dibujarRect(zonaArriba, '#7c6fff', '⬆ ARRIBA');
+        dibujarRect(zonaAbajo,  '#f97316', '⬇ ABAJO');
+      };
+    }
+
+    // Redibuja desde la imagen base almacenada
+    let frameImgData = null;
+    function redibujarConBase() {
+      if (!frameImgData) return;
+      ctx916.putImageData(frameImgData, 0, 0);
+      dibujarRect(zonaArriba, '#7c6fff', '⬆ ARRIBA');
+      dibujarRect(zonaAbajo,  '#f97316', '⬇ ABAJO');
+    }
+
+    function dibujarRect(zona, color, label) {
+      if (!zona) return;
+      ctx916.strokeStyle = color;
+      ctx916.lineWidth = Math.max(3, videoNativeW * 0.003);
+      ctx916.strokeRect(zona.x, zona.y, zona.w, zona.h);
+      ctx916.fillStyle = color + '33';
+      ctx916.fillRect(zona.x, zona.y, zona.w, zona.h);
+      ctx916.fillStyle = color;
+      ctx916.font = `bold ${Math.max(16, videoNativeW * 0.02)}px sans-serif`;
+      ctx916.fillText(label, zona.x + 6, zona.y + Math.max(20, videoNativeW * 0.025));
+    }
+
+    function actualizarBadges916() {
+      const ba = document.getElementById('badgeArriba');
+      const bb = document.getElementById('badgeAbajo');
+      ba.textContent = zonaArriba ? `⬆️ Arriba: seleccionado ✓` : '⬆️ Arriba: sin seleccionar';
+      bb.textContent = zonaAbajo  ? `⬇️ Abajo: seleccionado ✓`  : '⬇️ Abajo: sin seleccionar';
+      document.getElementById('btnConvertir916').disabled = !(zonaArriba && zonaAbajo);
+    }
+
+    // Canvas mouse events
+    canvasFrame.addEventListener('mousedown', e => {
+      if (!selMode916) return;
+      isDrawing = true;
+      const r = canvasFrame.getBoundingClientRect();
+      const scaleX = canvasFrame.width / r.width;
+      const scaleY = canvasFrame.height / r.height;
+      startX = (e.clientX - r.left) * scaleX;
+      startY = (e.clientY - r.top) * scaleY;
+      if (!frameImgData) frameImgData = ctx916.getImageData(0, 0, canvasFrame.width, canvasFrame.height);
+    });
+
+    canvasFrame.addEventListener('mousemove', e => {
+      if (!isDrawing || !selMode916) return;
+      const r = canvasFrame.getBoundingClientRect();
+      const scaleX = canvasFrame.width / r.width;
+      const scaleY = canvasFrame.height / r.height;
+      const curX = (e.clientX - r.left) * scaleX;
+      const curY = (e.clientY - r.top) * scaleY;
+      const tmpZona = { x: Math.min(startX, curX), y: Math.min(startY, curY), w: Math.abs(curX - startX), h: Math.abs(curY - startY) };
+      ctx916.putImageData(frameImgData, 0, 0);
+      dibujarRect(selMode916 === 'arriba' ? null : zonaArriba, '#7c6fff', '⬆ ARRIBA');
+      dibujarRect(selMode916 === 'abajo'  ? null : zonaAbajo,  '#f97316', '⬇ ABAJO');
+      dibujarRect(tmpZona, selMode916 === 'arriba' ? '#7c6fff' : '#f97316', selMode916 === 'arriba' ? '⬆ ARRIBA' : '⬇ ABAJO');
+    });
+
+    canvasFrame.addEventListener('mouseup', e => {
+      if (!isDrawing || !selMode916) return;
+      isDrawing = false;
+      const r = canvasFrame.getBoundingClientRect();
+      const scaleX = canvasFrame.width / r.width;
+      const scaleY = canvasFrame.height / r.height;
+      const endX = (e.clientX - r.left) * scaleX;
+      const endY = (e.clientY - r.top) * scaleY;
+      const zona = { x: Math.round(Math.min(startX, endX)), y: Math.round(Math.min(startY, endY)), w: Math.round(Math.abs(endX - startX)), h: Math.round(Math.abs(endY - startY)) };
+      if (zona.w < 10 || zona.h < 10) return;
+      if (selMode916 === 'arriba') zonaArriba = zona;
+      else zonaAbajo = zona;
+      actualizarBadges916();
+    });
+
+    // Touch support
+    function getTouchPos(e) {
+      const r = canvasFrame.getBoundingClientRect();
+      const scaleX = canvasFrame.width / r.width;
+      const scaleY = canvasFrame.height / r.height;
+      return { x: (e.touches[0].clientX - r.left) * scaleX, y: (e.touches[0].clientY - r.top) * scaleY };
+    }
+    canvasFrame.addEventListener('touchstart', e => { e.preventDefault(); if (!selMode916) return; isDrawing = true; const p = getTouchPos(e); startX = p.x; startY = p.y; if (!frameImgData) frameImgData = ctx916.getImageData(0, 0, canvasFrame.width, canvasFrame.height); }, { passive: false });
+    canvasFrame.addEventListener('touchmove', e => { e.preventDefault(); if (!isDrawing || !selMode916) return; const p = getTouchPos(e); const tmpZona = { x: Math.min(startX, p.x), y: Math.min(startY, p.y), w: Math.abs(p.x - startX), h: Math.abs(p.y - startY) }; ctx916.putImageData(frameImgData, 0, 0); dibujarRect(selMode916 === 'arriba' ? null : zonaArriba, '#7c6fff', '⬆ ARRIBA'); dibujarRect(selMode916 === 'abajo' ? null : zonaAbajo, '#f97316', '⬇ ABAJO'); dibujarRect(tmpZona, selMode916 === 'arriba' ? '#7c6fff' : '#f97316', selMode916 === 'arriba' ? '⬆ ARRIBA' : '⬇ ABAJO'); }, { passive: false });
+    canvasFrame.addEventListener('touchend', e => { e.preventDefault(); if (!isDrawing || !selMode916) return; isDrawing = false; const r = canvasFrame.getBoundingClientRect(); const scaleX = canvasFrame.width / r.width; const scaleY = canvasFrame.height / r.height; const p = { x: (e.changedTouches[0].clientX - r.left) * scaleX, y: (e.changedTouches[0].clientY - r.top) * scaleY }; const zona = { x: Math.round(Math.min(startX, p.x)), y: Math.round(Math.min(startY, p.y)), w: Math.round(Math.abs(p.x - startX)), h: Math.round(Math.abs(p.y - startY)) }; if (zona.w < 10 || zona.h < 10) return; if (selMode916 === 'arriba') zonaArriba = zona; else zonaAbajo = zona; actualizarBadges916(); }, { passive: false });
+
+    async function convertir916() {
+      if (!usuarioActual || !usuarioActual.autenticado) { window.location.href = '/auth/google'; return; }
+      if (!zonaArriba || !zonaAbajo || !videoFile916) return;
+
+      document.getElementById('btnConvertir916').disabled = true;
+      document.getElementById('progreso916Cont').style.display = '';
+      document.getElementById('resultado916').style.display = 'none';
+      document.getElementById('errorBox916').style.display = 'none';
+
+      const barra = document.getElementById('barra916');
+      const txt = document.getElementById('progreso916Txt');
+      txt.textContent = 'Convirtiendo... (puede tardar unos minutos)';
+      let prog = 0;
+      const interval = setInterval(() => { prog = Math.min(prog + 1, 90); barra.style.width = prog + '%'; }, 1000);
+
+      const fd = new FormData();
+      fd.append('video', videoFile916);
+      fd.append('topX', zonaArriba.x); fd.append('topY', zonaArriba.y);
+      fd.append('topW', zonaArriba.w); fd.append('topH', zonaArriba.h);
+      fd.append('botX', zonaAbajo.x);  fd.append('botY', zonaAbajo.y);
+      fd.append('botW', zonaAbajo.w);  fd.append('botH', zonaAbajo.h);
+
+      try {
+        const resp = await fetch('/convertir-916', { method: 'POST', body: fd });
+        clearInterval(interval);
+        if (!resp.ok) {
+          const err = await resp.json().catch(() => ({ error: 'Error desconocido' }));
+          document.getElementById('errorBox916').textContent = '❌ ' + (err.error || 'Error al convertir');
+          document.getElementById('errorBox916').style.display = 'block';
+          document.getElementById('progreso916Cont').style.display = 'none';
+          document.getElementById('btnConvertir916').disabled = false;
+          if (resp.status === 429) {
+            document.getElementById('errorBox916').textContent = '🔒 Ya usaste tu conversión gratuita. Actualiza a Pro para más.';
+          }
+          return;
+        }
+        barra.style.width = '100%';
+        blob916 = await resp.blob();
+        const url = URL.createObjectURL(blob916);
+        document.getElementById('linkDescarga916').href = url;
+        document.getElementById('linkDescarga916').download = 'video_9_16.mp4';
+        document.getElementById('progreso916Cont').style.display = 'none';
+        document.getElementById('resultado916').style.display = '';
+        document.getElementById('btnConvertir916').disabled = false;
+      } catch(err) {
+        clearInterval(interval);
+        document.getElementById('errorBox916').textContent = '❌ Error de conexión.';
+        document.getElementById('errorBox916').style.display = 'block';
+        document.getElementById('progreso916Cont').style.display = 'none';
+        document.getElementById('btnConvertir916').disabled = false;
+      }
+    }
+
+    function usarEn916EnDividir() {
+      if (!blob916) return;
+      const file = new File([blob916], 'video_9_16.mp4', { type: 'video/mp4' });
+      cambiarTab('dividir');
+      const dt = new DataTransfer();
+      dt.items.add(file);
+      document.getElementById('inputArchivo').files = dt.files;
+      document.getElementById('inputArchivo').dispatchEvent(new Event('change'));
     }
 
     // Mostrar mensaje si vuelve de pago

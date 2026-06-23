@@ -199,6 +199,55 @@ const upload = multer({
   limits: { fileSize: 4 * 1024 * 1024 * 1024 }
 });
 
+// Convertir video a formato 9:16
+app.post('/convertir-916', upload.single('video'), async (req, res) => {
+  if (!req.user) {
+    if (req.file) fs.unlinkSync(req.file.path);
+    return res.status(401).json({ error: 'Debes iniciar sesión.' });
+  }
+
+  if (req.user.plan === 'free' && req.user.conversion_gratis_usada) {
+    if (req.file) fs.unlinkSync(req.file.path);
+    return res.status(429).json({ error: 'Ya usaste tu conversión gratuita. Actualiza a Pro para más conversiones.' });
+  }
+
+  if (!req.file) return res.status(400).json({ error: 'No se subió ningún video.' });
+
+  const coords = ['topX','topY','topW','topH','botX','botY','botW','botH'].map(k => Math.round(Number(req.body[k])));
+  if (coords.some(isNaN) || coords.some(v => v < 0)) {
+    fs.unlinkSync(req.file.path);
+    return res.status(400).json({ error: 'Coordenadas inválidas.' });
+  }
+  const [tx, ty, tw, th, bx, by, bw, bh] = coords;
+
+  const inputFile = req.file.path;
+  const outputFile = path.join(os.tmpdir(), 'v916_' + Date.now() + '.mp4');
+
+  const filterComplex = [
+    `[0:v]crop=${tw}:${th}:${tx}:${ty},scale=1080:960:force_original_aspect_ratio=decrease,pad=1080:960:(ow-iw)/2:(oh-ih)/2:color=black[top]`,
+    `[0:v]crop=${bw}:${bh}:${bx}:${by},scale=1080:960:force_original_aspect_ratio=decrease,pad=1080:960:(ow-iw)/2:(oh-ih)/2:color=black[bot]`,
+    `[top][bot]vstack=inputs=2[out]`
+  ].join(';');
+
+  const args = ['-i', inputFile, '-filter_complex', filterComplex, '-map', '[out]', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'fast', '-crf', '23', '-y', outputFile];
+  const ffmpeg = spawn(FFMPEG, args);
+
+  ffmpeg.on('close', async (code) => {
+    fs.unlinkSync(inputFile);
+    if (code !== 0) return res.status(500).json({ error: 'Error al convertir el video.' });
+
+    if (req.user.plan === 'free') {
+      await supabase.from('usuarios').update({ conversion_gratis_usada: true }).eq('id', req.user.id);
+    }
+
+    res.setHeader('Content-Type', 'video/mp4');
+    res.setHeader('Content-Disposition', 'attachment; filename="video_9_16.mp4"');
+    const stream = fs.createReadStream(outputFile);
+    stream.pipe(res);
+    stream.on('end', () => { try { fs.unlinkSync(outputFile); } catch(e){} });
+  });
+});
+
 app.post('/dividir', upload.single('video'), async (req, res) => {
   if (!req.user) {
     if (req.file) fs.unlinkSync(req.file.path);
