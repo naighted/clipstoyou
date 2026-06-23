@@ -854,20 +854,20 @@
           <input type="file" id="inputVideo916" accept="video/*" style="display:none">
 
           <div id="editor916" style="display:none">
-            <p style="font-size:0.8rem;color:var(--gris);margin-bottom:10px;">Selecciona qué zona va <strong style="color:#7c6fff">arriba</strong> (reacción/webcam) y qué zona va <strong style="color:#f97316">abajo</strong> (gameplay/contenido).</p>
-
-            <div class="sel-btns">
-              <button class="btn-sel arriba" id="btnSelArriba" onclick="activarSel('arriba')">⬆️ Zona ARRIBA</button>
-              <button class="btn-sel abajo"  id="btnSelAbajo"  onclick="activarSel('abajo')">⬇️ Zona ABAJO</button>
-            </div>
+            <p style="font-size:0.82rem;color:var(--gris);margin-bottom:10px;">📌 Dibuja un rectángulo sobre <strong style="color:#fff">tu cámara/webcam</strong>. El gameplay se detecta automáticamente.</p>
 
             <div class="canvas-wrap" id="canvasWrap">
               <canvas id="canvasFrame"></canvas>
             </div>
 
             <div class="sel-info">
-              <span class="sel-badge arriba" id="badgeArriba">⬆️ Arriba: sin seleccionar</span>
-              <span class="sel-badge abajo"  id="badgeAbajo">⬇️ Abajo: sin seleccionar</span>
+              <span class="sel-badge arriba" id="badgeCam" style="background:rgba(124,111,255,0.15);color:#7c6fff">🎥 Cam: sin seleccionar</span>
+            </div>
+
+            <p style="font-size:0.8rem;color:var(--gris);margin-bottom:8px;">¿Dónde va tu cámara en el resultado?</p>
+            <div class="sel-btns" style="margin-bottom:14px;">
+              <button class="btn-sel abajo activo" id="btnCamAbajo"  onclick="setCamPos('abajo')">⬇️ Cam ABAJO (recomendado)</button>
+              <button class="btn-sel arriba"       id="btnCamArriba" onclick="setCamPos('arriba')">⬆️ Cam ARRIBA</button>
             </div>
 
             <button class="btn-principal" id="btnConvertir916" onclick="convertir916()" style="opacity:0.4;cursor:not-allowed;">Convertir a 9:16</button>
@@ -1350,8 +1350,8 @@
     }
 
     // ─── CONVERTIDOR 9:16 ─────────────────────────────────────
-    let selMode916 = null;
-    let zonaArriba = null, zonaAbajo = null;
+    let zonaCam = null;
+    let camPosicion = 'abajo';
     let isDrawing = false, startX, startY;
     let videoFile916 = null;
     let videoNativeW = 1, videoNativeH = 1;
@@ -1390,10 +1390,11 @@
         canvasFrame.width = videoNativeW;
         canvasFrame.height = videoNativeH;
         ctx916.drawImage(vid, 0, 0);
+        frameImgData = ctx916.getImageData(0, 0, canvasFrame.width, canvasFrame.height);
         URL.revokeObjectURL(url);
-        zonaArriba = null; zonaAbajo = null;
+        zonaCam = null;
         actualizarBadges916();
-        document.getElementById('editor916').style.display = '';
+        document.getElementById('editor916').style.display = 'block';
         zonaSubida916.style.display = 'none';
         document.getElementById('resultado916').style.display = 'none';
         document.getElementById('errorBox916').style.display = 'none';
@@ -1401,31 +1402,13 @@
       vid.load();
     }
 
-    function activarSel(modo) {
-      selMode916 = modo;
-      document.getElementById('btnSelArriba').classList.toggle('activo', modo === 'arriba');
-      document.getElementById('btnSelAbajo').classList.toggle('activo', modo === 'abajo');
+    function setCamPos(pos) {
+      camPosicion = pos;
+      document.getElementById('btnCamAbajo').classList.toggle('activo', pos === 'abajo');
+      document.getElementById('btnCamArriba').classList.toggle('activo', pos === 'arriba');
     }
 
-    function redibujar916() {
-      const img = new Image();
-      img.src = canvasFrame.toDataURL();
-      img.onload = () => {
-        ctx916.clearRect(0, 0, canvasFrame.width, canvasFrame.height);
-        ctx916.drawImage(img, 0, 0);
-        dibujarRect(zonaArriba, '#7c6fff', '⬆ ARRIBA');
-        dibujarRect(zonaAbajo,  '#f97316', '⬇ ABAJO');
-      };
-    }
-
-    // Redibuja desde la imagen base almacenada
     let frameImgData = null;
-    function redibujarConBase() {
-      if (!frameImgData) return;
-      ctx916.putImageData(frameImgData, 0, 0);
-      dibujarRect(zonaArriba, '#7c6fff', '⬆ ARRIBA');
-      dibujarRect(zonaAbajo,  '#f97316', '⬇ ABAJO');
-    }
 
     function dibujarRect(zona, color, label) {
       if (!zona) return;
@@ -1440,90 +1423,74 @@
     }
 
     function actualizarBadges916() {
-      const ba = document.getElementById('badgeArriba');
-      const bb = document.getElementById('badgeAbajo');
-      ba.textContent = zonaArriba ? `⬆️ Arriba: seleccionado ✓` : '⬆️ Arriba: sin seleccionar';
-      bb.textContent = zonaAbajo  ? `⬇️ Abajo: seleccionado ✓`  : '⬇️ Abajo: sin seleccionar';
+      document.getElementById('badgeCam').textContent = zonaCam ? '🎥 Cam: seleccionada ✓' : '🎥 Cam: sin seleccionar';
       const btnC = document.getElementById('btnConvertir916');
-      const listo = !!(zonaArriba && zonaAbajo);
-      btnC.style.opacity = listo ? '1' : '0.4';
-      btnC.style.cursor = listo ? 'pointer' : 'not-allowed';
+      btnC.style.opacity = zonaCam ? '1' : '0.4';
+      btnC.style.cursor = zonaCam ? 'pointer' : 'not-allowed';
     }
 
-    // Canvas mouse events
+    // Canvas mouse events — single cam zone selection
     canvasFrame.addEventListener('mousedown', e => {
-      if (!selMode916) return;
       isDrawing = true;
       const r = canvasFrame.getBoundingClientRect();
-      const scaleX = canvasFrame.width / r.width;
-      const scaleY = canvasFrame.height / r.height;
-      startX = (e.clientX - r.left) * scaleX;
-      startY = (e.clientY - r.top) * scaleY;
-      if (!frameImgData) frameImgData = ctx916.getImageData(0, 0, canvasFrame.width, canvasFrame.height);
+      startX = (e.clientX - r.left) * (canvasFrame.width / r.width);
+      startY = (e.clientY - r.top) * (canvasFrame.height / r.height);
     });
 
     canvasFrame.addEventListener('mousemove', e => {
-      if (!isDrawing || !selMode916) return;
+      if (!isDrawing) return;
       const r = canvasFrame.getBoundingClientRect();
-      const scaleX = canvasFrame.width / r.width;
-      const scaleY = canvasFrame.height / r.height;
-      const curX = (e.clientX - r.left) * scaleX;
-      const curY = (e.clientY - r.top) * scaleY;
-      const tmpZona = { x: Math.min(startX, curX), y: Math.min(startY, curY), w: Math.abs(curX - startX), h: Math.abs(curY - startY) };
+      const curX = (e.clientX - r.left) * (canvasFrame.width / r.width);
+      const curY = (e.clientY - r.top) * (canvasFrame.height / r.height);
       ctx916.putImageData(frameImgData, 0, 0);
-      dibujarRect(selMode916 === 'arriba' ? null : zonaArriba, '#7c6fff', '⬆ ARRIBA');
-      dibujarRect(selMode916 === 'abajo'  ? null : zonaAbajo,  '#f97316', '⬇ ABAJO');
-      dibujarRect(tmpZona, selMode916 === 'arriba' ? '#7c6fff' : '#f97316', selMode916 === 'arriba' ? '⬆ ARRIBA' : '⬇ ABAJO');
+      dibujarRect({ x: Math.min(startX, curX), y: Math.min(startY, curY), w: Math.abs(curX - startX), h: Math.abs(curY - startY) }, '#7c6fff', '🎥 CAM');
     });
 
     canvasFrame.addEventListener('mouseup', e => {
-      if (!isDrawing || !selMode916) return;
+      if (!isDrawing) return;
       isDrawing = false;
       const r = canvasFrame.getBoundingClientRect();
-      const scaleX = canvasFrame.width / r.width;
-      const scaleY = canvasFrame.height / r.height;
-      const endX = (e.clientX - r.left) * scaleX;
-      const endY = (e.clientY - r.top) * scaleY;
+      const endX = (e.clientX - r.left) * (canvasFrame.width / r.width);
+      const endY = (e.clientY - r.top) * (canvasFrame.height / r.height);
       const zona = { x: Math.round(Math.min(startX, endX)), y: Math.round(Math.min(startY, endY)), w: Math.round(Math.abs(endX - startX)), h: Math.round(Math.abs(endY - startY)) };
       if (zona.w < 10 || zona.h < 10) return;
-      if (selMode916 === 'arriba') zonaArriba = zona;
-      else zonaAbajo = zona;
+      zonaCam = zona;
+      ctx916.putImageData(frameImgData, 0, 0);
+      dibujarRect(zonaCam, '#7c6fff', '🎥 CAM');
       actualizarBadges916();
     });
 
     // Touch support
-    function getTouchPos(e) {
-      const r = canvasFrame.getBoundingClientRect();
-      const scaleX = canvasFrame.width / r.width;
-      const scaleY = canvasFrame.height / r.height;
-      return { x: (e.touches[0].clientX - r.left) * scaleX, y: (e.touches[0].clientY - r.top) * scaleY };
-    }
-    canvasFrame.addEventListener('touchstart', e => { e.preventDefault(); if (!selMode916) return; isDrawing = true; const p = getTouchPos(e); startX = p.x; startY = p.y; if (!frameImgData) frameImgData = ctx916.getImageData(0, 0, canvasFrame.width, canvasFrame.height); }, { passive: false });
-    canvasFrame.addEventListener('touchmove', e => { e.preventDefault(); if (!isDrawing || !selMode916) return; const p = getTouchPos(e); const tmpZona = { x: Math.min(startX, p.x), y: Math.min(startY, p.y), w: Math.abs(p.x - startX), h: Math.abs(p.y - startY) }; ctx916.putImageData(frameImgData, 0, 0); dibujarRect(selMode916 === 'arriba' ? null : zonaArriba, '#7c6fff', '⬆ ARRIBA'); dibujarRect(selMode916 === 'abajo' ? null : zonaAbajo, '#f97316', '⬇ ABAJO'); dibujarRect(tmpZona, selMode916 === 'arriba' ? '#7c6fff' : '#f97316', selMode916 === 'arriba' ? '⬆ ARRIBA' : '⬇ ABAJO'); }, { passive: false });
-    canvasFrame.addEventListener('touchend', e => { e.preventDefault(); if (!isDrawing || !selMode916) return; isDrawing = false; const r = canvasFrame.getBoundingClientRect(); const scaleX = canvasFrame.width / r.width; const scaleY = canvasFrame.height / r.height; const p = { x: (e.changedTouches[0].clientX - r.left) * scaleX, y: (e.changedTouches[0].clientY - r.top) * scaleY }; const zona = { x: Math.round(Math.min(startX, p.x)), y: Math.round(Math.min(startY, p.y)), w: Math.round(Math.abs(p.x - startX)), h: Math.round(Math.abs(p.y - startY)) }; if (zona.w < 10 || zona.h < 10) return; if (selMode916 === 'arriba') zonaArriba = zona; else zonaAbajo = zona; actualizarBadges916(); }, { passive: false });
+    canvasFrame.addEventListener('touchstart', e => { e.preventDefault(); isDrawing = true; const r = canvasFrame.getBoundingClientRect(); startX = (e.touches[0].clientX - r.left) * (canvasFrame.width / r.width); startY = (e.touches[0].clientY - r.top) * (canvasFrame.height / r.height); }, { passive: false });
+    canvasFrame.addEventListener('touchmove', e => { e.preventDefault(); if (!isDrawing) return; const r = canvasFrame.getBoundingClientRect(); const cx = (e.touches[0].clientX - r.left) * (canvasFrame.width / r.width); const cy = (e.touches[0].clientY - r.top) * (canvasFrame.height / r.height); ctx916.putImageData(frameImgData, 0, 0); dibujarRect({ x: Math.min(startX, cx), y: Math.min(startY, cy), w: Math.abs(cx - startX), h: Math.abs(cy - startY) }, '#7c6fff', '🎥 CAM'); }, { passive: false });
+    canvasFrame.addEventListener('touchend', e => { e.preventDefault(); if (!isDrawing) return; isDrawing = false; const r = canvasFrame.getBoundingClientRect(); const ex = (e.changedTouches[0].clientX - r.left) * (canvasFrame.width / r.width); const ey = (e.changedTouches[0].clientY - r.top) * (canvasFrame.height / r.height); const zona = { x: Math.round(Math.min(startX, ex)), y: Math.round(Math.min(startY, ey)), w: Math.round(Math.abs(ex - startX)), h: Math.round(Math.abs(ey - startY)) }; if (zona.w < 10 || zona.h < 10) return; zonaCam = zona; ctx916.putImageData(frameImgData, 0, 0); dibujarRect(zonaCam, '#7c6fff', '🎥 CAM'); actualizarBadges916(); }, { passive: false });
 
     async function convertir916() {
       if (!usuarioActual || !usuarioActual.autenticado) { window.location.href = '/auth/google'; return; }
-      if (!zonaArriba || !zonaAbajo) { alert('Selecciona ambas zonas primero.'); return; }
+      if (!zonaCam) { alert('Marca primero la zona de tu cámara.'); return; }
       if (!videoFile916) { alert('No hay video cargado.'); return; }
 
-      document.getElementById('btnConvertir916').disabled = true;
+      const btn = document.getElementById('btnConvertir916');
+      btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed';
       document.getElementById('progreso916Cont').style.display = '';
       document.getElementById('resultado916').style.display = 'none';
       document.getElementById('errorBox916').style.display = 'none';
 
       const barra = document.getElementById('barra916');
       const txt = document.getElementById('progreso916Txt');
-      txt.textContent = 'Convirtiendo... (puede tardar unos minutos)';
+      txt.textContent = 'Convirtiendo... puede tardar 1-3 min';
       let prog = 0;
-      const interval = setInterval(() => { prog = Math.min(prog + 1, 90); barra.style.width = prog + '%'; }, 1000);
+      const interval = setInterval(() => {
+        prog = Math.min(prog + (prog < 30 ? 2 : prog < 70 ? 1 : 0.3), 92);
+        barra.style.width = prog + '%';
+        txt.textContent = prog < 40 ? 'Convirtiendo... puede tardar 1-3 min' : prog < 75 ? 'Procesando video...' : 'Casi listo...';
+      }, 1000);
 
       const fd = new FormData();
       fd.append('video', videoFile916);
-      fd.append('topX', zonaArriba.x); fd.append('topY', zonaArriba.y);
-      fd.append('topW', zonaArriba.w); fd.append('topH', zonaArriba.h);
-      fd.append('botX', zonaAbajo.x);  fd.append('botY', zonaAbajo.y);
-      fd.append('botW', zonaAbajo.w);  fd.append('botH', zonaAbajo.h);
+      fd.append('camX', zonaCam.x); fd.append('camY', zonaCam.y);
+      fd.append('camW', zonaCam.w); fd.append('camH', zonaCam.h);
+      fd.append('camPosicion', camPosicion);
 
       try {
         const resp = await fetch('/convertir-916', { method: 'POST', body: fd });
@@ -1533,7 +1500,7 @@
           document.getElementById('errorBox916').textContent = '❌ ' + (err.error || 'Error al convertir');
           document.getElementById('errorBox916').style.display = 'block';
           document.getElementById('progreso916Cont').style.display = 'none';
-          document.getElementById('btnConvertir916').disabled = false;
+          habilitarBtn916();
           if (resp.status === 429) {
             document.getElementById('errorBox916').textContent = '🔒 Ya usaste tu conversión gratuita. Actualiza a Pro para más.';
           }
@@ -1546,14 +1513,20 @@
         document.getElementById('linkDescarga916').download = 'video_9_16.mp4';
         document.getElementById('progreso916Cont').style.display = 'none';
         document.getElementById('resultado916').style.display = '';
-        document.getElementById('btnConvertir916').disabled = false;
+        habilitarBtn916();
       } catch(err) {
         clearInterval(interval);
         document.getElementById('errorBox916').textContent = '❌ Error de conexión.';
         document.getElementById('errorBox916').style.display = 'block';
         document.getElementById('progreso916Cont').style.display = 'none';
-        document.getElementById('btnConvertir916').disabled = false;
+        habilitarBtn916();
       }
+    }
+
+    function habilitarBtn916() {
+      const btn = document.getElementById('btnConvertir916');
+      btn.style.opacity = zonaCam ? '1' : '0.4';
+      btn.style.cursor = zonaCam ? 'pointer' : 'not-allowed';
     }
 
     function usarEn916EnDividir() {
