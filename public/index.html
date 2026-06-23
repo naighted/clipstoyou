@@ -1321,6 +1321,7 @@
           <div class="usuario-info">
             <span class="usos-badge ${badgeClass}">${data.restantes}/${data.limite} ${idioma === 'es' ? 'hoy' : 'today'}</span>
             <span>${data.nombre.split(' ')[0]}</span>
+            ${data.isAdmin ? '<a href="/admin" style="color:#7c6fff;font-size:0.78rem;text-decoration:none;font-weight:600;" title="Panel de administración">⚙ Admin</a>' : ''}
             <a href="/logout" class="btn-logout">${idioma === 'es' ? 'Salir' : 'Logout'}</a>
           </div>`;
         avisoLogin.style.display = 'none';

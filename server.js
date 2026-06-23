@@ -108,6 +108,7 @@ app.get('/api/usuario', async (req, res) => {
     nombre: req.user.nombre,
     email: req.user.email,
     plan: req.user.plan,
+    isAdmin: req.user.email === ADMIN_EMAIL,
     usos_hoy: req.user.usos_hoy,
     limite: LIMITE_DIARIO,
     restantes: Math.max(0, LIMITE_DIARIO - req.user.usos_hoy)
