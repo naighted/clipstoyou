@@ -224,8 +224,8 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
   const outputFile = path.join(os.tmpdir(), 'v916_' + Date.now() + '.mp4');
 
   const filterComplex = [
-    `[0:v]crop=${tw}:${th}:${tx}:${ty},scale=1080:960:force_original_aspect_ratio=decrease,pad=1080:960:(ow-iw)/2:(oh-ih)/2:color=black[top]`,
-    `[0:v]crop=${bw}:${bh}:${bx}:${by},scale=1080:960:force_original_aspect_ratio=decrease,pad=1080:960:(ow-iw)/2:(oh-ih)/2:color=black[bot]`,
+    `[0:v]crop=${tw}:${th}:${tx}:${ty},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960[top]`,
+    `[0:v]crop=${bw}:${bh}:${bx}:${by},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960[bot]`,
     `[top][bot]vstack=inputs=2[out]`
   ].join(';');
 
