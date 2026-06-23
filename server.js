@@ -281,47 +281,46 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
 
   if (!req.file) return res.status(400).json({ error: 'No se subió ningún video.' });
 
-  const camCoords = ['camX','camY','camW','camH'].map(k => Math.round(Number(req.body[k])));
-  if (camCoords.some(isNaN) || camCoords.some(v => v < 0)) {
-    fs.unlinkSync(req.file.path);
-    return res.status(400).json({ error: 'Coordenadas inválidas.' });
-  }
-  const [cx, cy, cw, ch] = camCoords;
-  const camPosicion = req.body.camPosicion === 'arriba' ? 'arriba' : 'abajo';
-  const videoW = Math.round(Number(req.body.videoW)) || 0;
-  const videoH = Math.round(Number(req.body.videoH)) || 0;
-
+  const modoCam = req.body.modoCam === 'sin-cam' ? 'sin-cam' : 'con-cam';
   const inputFile = req.file.path;
   const outputFile = path.join(os.tmpdir(), 'v916_' + Date.now() + '.mp4');
+  let args;
 
-  const filtroCam = `crop=${cw}:${ch}:${cx}:${cy},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
-
-  // Find the largest clean gameplay region that excludes the cam overlay
-  let filtroGameplay = `scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
-  if (videoW > 0 && videoH > 0) {
-    const candidates = [
-      { x: 0,     y: 0,      w: videoW,       h: cy,             label: 'arriba_cam' },
-      { x: 0,     y: cy+ch,  w: videoW,       h: videoH-cy-ch,   label: 'abajo_cam'  },
-      { x: 0,     y: 0,      w: cx,           h: videoH,         label: 'izq_cam'    },
-      { x: cx+cw, y: 0,      w: videoW-cx-cw, h: videoH,         label: 'der_cam'    },
-    ].filter(r => r.w > videoW * 0.15 && r.h > videoH * 0.15);
-
-    if (candidates.length > 0) {
-      const best = candidates.reduce((a, b) => (a.w * a.h >= b.w * b.h ? a : b));
-      filtroGameplay = `crop=${best.w}:${best.h}:${best.x}:${best.y},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
+  if (modoCam === 'sin-cam') {
+    // Zoom automático: escala y recorta al centro para rellenar 1080x1920 (9:16 completo)
+    const filtro = `scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920`;
+    args = ['-i', inputFile, '-vf', filtro, '-map', '0:a?', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-y', outputFile];
+  } else {
+    const camCoords = ['camX','camY','camW','camH'].map(k => Math.round(Number(req.body[k])));
+    if (camCoords.some(isNaN) || camCoords.some(v => v < 0)) {
+      fs.unlinkSync(req.file.path);
+      return res.status(400).json({ error: 'Coordenadas inválidas.' });
     }
+    const [cx, cy, cw, ch] = camCoords;
+    const camPosicion = req.body.camPosicion === 'arriba' ? 'arriba' : 'abajo';
+    const videoW = Math.round(Number(req.body.videoW)) || 0;
+    const videoH = Math.round(Number(req.body.videoH)) || 0;
+
+    const filtroCam = `crop=${cw}:${ch}:${cx}:${cy},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
+    let filtroGameplay = `scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
+    if (videoW > 0 && videoH > 0) {
+      const candidates = [
+        { x: 0,     y: 0,      w: videoW,       h: cy           },
+        { x: 0,     y: cy+ch,  w: videoW,       h: videoH-cy-ch },
+        { x: 0,     y: 0,      w: cx,           h: videoH       },
+        { x: cx+cw, y: 0,      w: videoW-cx-cw, h: videoH       },
+      ].filter(r => r.w > videoW * 0.15 && r.h > videoH * 0.15);
+      if (candidates.length > 0) {
+        const best = candidates.reduce((a, b) => (a.w * a.h >= b.w * b.h ? a : b));
+        filtroGameplay = `crop=${best.w}:${best.h}:${best.x}:${best.y},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
+      }
+    }
+
+    const topFilter = camPosicion === 'arriba' ? filtroCam : filtroGameplay;
+    const botFilter = camPosicion === 'arriba' ? filtroGameplay : filtroCam;
+    const filterComplex = [`[0:v]${topFilter}[top]`, `[0:v]${botFilter}[bot]`, `[top][bot]vstack=inputs=2[out]`].join(';');
+    args = ['-i', inputFile, '-filter_complex', filterComplex, '-map', '[out]', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-y', outputFile];
   }
-
-  const topFilter = camPosicion === 'arriba' ? filtroCam : filtroGameplay;
-  const botFilter = camPosicion === 'arriba' ? filtroGameplay : filtroCam;
-
-  const filterComplex = [
-    `[0:v]${topFilter}[top]`,
-    `[0:v]${botFilter}[bot]`,
-    `[top][bot]vstack=inputs=2[out]`
-  ].join(';');
-
-  const args = ['-i', inputFile, '-filter_complex', filterComplex, '-map', '[out]', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-y', outputFile];
   const ffmpeg = spawn(FFMPEG, args);
 
   let stderrLog = '';

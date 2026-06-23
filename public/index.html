@@ -868,13 +868,20 @@
         <!-- PANEL CONVERTIR 9:16 -->
         <div id="panelConvertir">
 
+          <!-- Toggle modo -->
+          <div style="display:flex;gap:8px;margin-bottom:12px;">
+            <button id="btnModoCam"    class="btn-sel abajo activo" onclick="setModo916('con-cam')"  style="flex:1;font-size:0.78rem;">🎥 Con webcam</button>
+            <button id="btnModoSinCam" class="btn-sel arriba"       onclick="setModo916('sin-cam')" style="flex:1;font-size:0.78rem;">📹 Sin webcam</button>
+          </div>
+
           <div class="zona-subida" id="zonaSubida916" onclick="abrirSubida916()">
             <div class="icono">📱</div>
             <div class="z-titulo">Haz clic o arrastra tu video aquí</div>
-            <div class="z-sub">Video horizontal (16:9) → salida vertical (9:16)</div>
+            <div class="z-sub" id="zonaSubTxt">Video horizontal (16:9) → salida vertical (9:16)</div>
           </div>
           <input type="file" id="inputVideo916" accept="video/*" style="display:none">
 
+          <!-- Editor CON webcam -->
           <div id="editor916" style="display:none">
             <p style="font-size:0.82rem;color:var(--gris);margin-bottom:10px;">📌 Dibuja un rectángulo sobre <strong style="color:#fff">tu cámara/webcam</strong>. El gameplay se detecta automáticamente.</p>
 
@@ -893,22 +900,31 @@
             </div>
 
             <button class="btn-principal" id="btnConvertir916" onclick="convertir916()" style="opacity:0.4;cursor:not-allowed;">Convertir a 9:16</button>
-            <div class="progreso-contenedor" id="progreso916Cont" style="display:none;margin-top:14px;">
-              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
-                <span class="spinner" style="font-size:1.1rem;">⚙️</span>
-                <span id="progreso916Txt" style="color:#fff;font-size:0.88rem;font-weight:500;">Convirtiendo... puede tardar 1-3 min</span>
-              </div>
-              <div class="barra-fondo"><div class="barra" id="barra916" style="width:5%"></div></div>
-              <p style="color:var(--gris);font-size:0.75rem;margin-top:6px;text-align:center;">No cierres la página mientras se procesa</p>
-            </div>
-            <div class="error-box" id="errorBox916"></div>
+          </div>
 
-            <div id="resultado916" style="display:none;margin-top:14px;text-align:center;">
-              <p style="color:#6fcf97;margin-bottom:12px;font-size:0.9rem;">✅ ¡Video convertido!</p>
-              <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
-                <a id="linkDescarga916" class="btn-principal" style="text-decoration:none;display:inline-block;padding:10px 20px;">⬇️ Descargar 9:16</a>
-                <button class="btn-principal" style="background:#1a1a2e;border:1px solid var(--morado);" onclick="usarEn916EnDividir()">✂️ Dividir en partes</button>
-              </div>
+          <!-- Editor SIN webcam -->
+          <div id="editorSinCam916" style="display:none;margin-top:10px;">
+            <p style="font-size:0.82rem;color:var(--gris);margin-bottom:14px;">🔍 El video se ampliará automáticamente para rellenar el formato vertical 9:16. Perfecto para podcasts, clips de YouTube o cualquier video sin cámara.</p>
+            <button class="btn-principal" id="btnConvertirSinCam" onclick="convertir916()" style="opacity:0.4;cursor:not-allowed;">Convertir a 9:16</button>
+          </div>
+
+          <!-- Progreso, error y resultado (compartidos) -->
+          <div class="progreso-contenedor" id="progreso916Cont" style="display:none;margin-top:14px;">
+            <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+              <span class="spinner" style="font-size:1.1rem;">⚙️</span>
+              <span id="progreso916Txt" style="color:#fff;font-size:0.88rem;font-weight:500;">Convirtiendo... puede tardar 1-3 min</span>
+            </div>
+            <div class="barra-fondo"><div class="barra" id="barra916" style="width:5%"></div></div>
+            <p style="color:var(--gris);font-size:0.75rem;margin-top:6px;text-align:center;">No cierres la página mientras se procesa</p>
+          </div>
+          <div class="error-box" id="errorBox916" style="display:none;margin-top:10px;"></div>
+
+          <div id="resultado916" style="display:none;margin-top:14px;text-align:center;">
+            <p style="color:#6fcf97;margin-bottom:12px;font-size:0.9rem;">✅ ¡Video convertido!</p>
+            <div style="display:flex;gap:10px;justify-content:center;flex-wrap:wrap;">
+              <a id="linkDescarga916" class="btn-principal" style="text-decoration:none;display:inline-block;padding:10px 20px;">⬇️ Descargar 9:16</a>
+              <button class="btn-principal" style="background:#1a1a2e;border:1px solid var(--morado);" onclick="usarEn916EnDividir()">✂️ Dividir en partes</button>
+              <button class="btn-principal" style="background:#111;border:1px solid #333;color:#aaa;" onclick="resetConvertir916()">🔄 Convertir otro</button>
             </div>
           </div>
 
@@ -1429,10 +1445,43 @@
     // ─── CONVERTIDOR 9:16 ─────────────────────────────────────
     let zonaCam = null;
     let camPosicion = 'abajo';
+    let modo916 = 'con-cam';
     let isDrawing = false, startX, startY;
     let videoFile916 = null;
     let videoNativeW = 1, videoNativeH = 1;
     let blob916 = null;
+
+    function setModo916(m) {
+      modo916 = m;
+      document.getElementById('btnModoCam').classList.toggle('activo', m === 'con-cam');
+      document.getElementById('btnModoSinCam').classList.toggle('activo', m === 'sin-cam');
+      document.getElementById('zonaSubTxt').textContent = m === 'sin-cam'
+        ? 'Video horizontal → zoom automático a 9:16'
+        : 'Video horizontal (16:9) → salida vertical (9:16)';
+      // Si ya hay video cargado, mostrar el editor correcto
+      if (videoFile916) {
+        document.getElementById('editor916').style.display = m === 'con-cam' ? 'block' : 'none';
+        document.getElementById('editorSinCam916').style.display = m === 'sin-cam' ? 'block' : 'none';
+        if (m === 'sin-cam') {
+          const btn = document.getElementById('btnConvertirSinCam');
+          btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+        }
+      }
+    }
+
+    function resetConvertir916() {
+      zonaCam = null;
+      videoFile916 = null;
+      blob916 = null;
+      document.getElementById('editor916').style.display = 'none';
+      document.getElementById('editorSinCam916').style.display = 'none';
+      document.getElementById('resultado916').style.display = 'none';
+      document.getElementById('errorBox916').style.display = 'none';
+      document.getElementById('progreso916Cont').style.display = 'none';
+      document.getElementById('zonaSubida916').style.display = '';
+      document.getElementById('barra916').style.width = '5%';
+      actualizarBadges916();
+    }
 
     const inputVideo916 = document.getElementById('inputVideo916');
     const zonaSubida916 = document.getElementById('zonaSubida916');
@@ -1471,10 +1520,18 @@
         URL.revokeObjectURL(url);
         zonaCam = null;
         actualizarBadges916();
-        document.getElementById('editor916').style.display = 'block';
         zonaSubida916.style.display = 'none';
         document.getElementById('resultado916').style.display = 'none';
         document.getElementById('errorBox916').style.display = 'none';
+        if (modo916 === 'sin-cam') {
+          document.getElementById('editor916').style.display = 'none';
+          document.getElementById('editorSinCam916').style.display = 'block';
+          const b = document.getElementById('btnConvertirSinCam');
+          b.style.opacity = '1'; b.style.cursor = 'pointer';
+        } else {
+          document.getElementById('editor916').style.display = 'block';
+          document.getElementById('editorSinCam916').style.display = 'none';
+        }
       });
       vid.load();
     }
@@ -1544,7 +1601,7 @@
 
     async function convertir916() {
       if (!usuarioActual || !usuarioActual.autenticado) { window.location.href = '/auth/google'; return; }
-      if (!zonaCam) { alert('Marca primero la zona de tu cámara.'); return; }
+      if (modo916 === 'con-cam' && !zonaCam) { alert('Marca primero la zona de tu cámara.'); return; }
       if (!videoFile916) { alert('No hay video cargado.'); return; }
 
       const btn = document.getElementById('btnConvertir916');
@@ -1566,10 +1623,13 @@
 
       const fd = new FormData();
       fd.append('video', videoFile916);
-      fd.append('camX', zonaCam.x); fd.append('camY', zonaCam.y);
-      fd.append('camW', zonaCam.w); fd.append('camH', zonaCam.h);
-      fd.append('camPosicion', camPosicion);
+      fd.append('modoCam', modo916);
       fd.append('videoW', videoNativeW); fd.append('videoH', videoNativeH);
+      if (modo916 === 'con-cam') {
+        fd.append('camX', zonaCam.x); fd.append('camY', zonaCam.y);
+        fd.append('camW', zonaCam.w); fd.append('camH', zonaCam.h);
+        fd.append('camPosicion', camPosicion);
+      }
 
       try {
         const resp = await fetch('/convertir-916', { method: 'POST', body: fd });
@@ -1606,6 +1666,8 @@
       const btn = document.getElementById('btnConvertir916');
       btn.style.opacity = zonaCam ? '1' : '0.4';
       btn.style.cursor = zonaCam ? 'pointer' : 'not-allowed';
+      const btn2 = document.getElementById('btnConvertirSinCam');
+      if (btn2) { btn2.style.opacity = videoFile916 ? '1' : '0.4'; btn2.style.cursor = videoFile916 ? 'pointer' : 'not-allowed'; }
     }
 
     function usarEn916EnDividir() {
