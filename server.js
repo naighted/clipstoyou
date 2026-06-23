@@ -42,6 +42,14 @@ if (process.env.DATABASE_URL) {
 
 app.use(session(sessionConfig));
 
+// Redirect Railway domain to production domain
+app.use((req, res, next) => {
+  if (req.hostname && req.hostname.includes('railway.app')) {
+    return res.redirect(301, 'https://www.clipstoyou.com' + req.url);
+  }
+  next();
+});
+
 app.use(passport.initialize());
 app.use(passport.session());
 
