@@ -1539,6 +1539,7 @@
       fd.append('camX', zonaCam.x); fd.append('camY', zonaCam.y);
       fd.append('camW', zonaCam.w); fd.append('camH', zonaCam.h);
       fd.append('camPosicion', camPosicion);
+      fd.append('videoW', videoNativeW); fd.append('videoH', videoNativeH);
 
       try {
         const resp = await fetch('/convertir-916', { method: 'POST', body: fd });

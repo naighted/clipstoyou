@@ -221,12 +221,29 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
   }
   const [cx, cy, cw, ch] = camCoords;
   const camPosicion = req.body.camPosicion === 'arriba' ? 'arriba' : 'abajo';
+  const videoW = Math.round(Number(req.body.videoW)) || 0;
+  const videoH = Math.round(Number(req.body.videoH)) || 0;
 
   const inputFile = req.file.path;
   const outputFile = path.join(os.tmpdir(), 'v916_' + Date.now() + '.mp4');
 
-  const filtroCam      = `crop=${cw}:${ch}:${cx}:${cy},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
-  const filtroGameplay = `scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
+  const filtroCam = `crop=${cw}:${ch}:${cx}:${cy},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
+
+  // Find the largest clean gameplay region that excludes the cam overlay
+  let filtroGameplay = `scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
+  if (videoW > 0 && videoH > 0) {
+    const candidates = [
+      { x: 0,     y: 0,      w: videoW,       h: cy,             label: 'arriba_cam' },
+      { x: 0,     y: cy+ch,  w: videoW,       h: videoH-cy-ch,   label: 'abajo_cam'  },
+      { x: 0,     y: 0,      w: cx,           h: videoH,         label: 'izq_cam'    },
+      { x: cx+cw, y: 0,      w: videoW-cx-cw, h: videoH,         label: 'der_cam'    },
+    ].filter(r => r.w > videoW * 0.15 && r.h > videoH * 0.15);
+
+    if (candidates.length > 0) {
+      const best = candidates.reduce((a, b) => (a.w * a.h >= b.w * b.h ? a : b));
+      filtroGameplay = `crop=${best.w}:${best.h}:${best.x}:${best.y},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
+    }
+  }
 
   const topFilter = camPosicion === 'arriba' ? filtroCam : filtroGameplay;
   const botFilter = camPosicion === 'arriba' ? filtroGameplay : filtroCam;
