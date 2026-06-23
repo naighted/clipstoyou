@@ -411,9 +411,18 @@
       margin-bottom: 8px;
     }
 
+    @keyframes barraShimmer {
+      0% { background-position: -200% center; }
+      100% { background-position: 200% center; }
+    }
+    @keyframes spin { to { transform: rotate(360deg); } }
+    .spinner { display: inline-block; animation: spin 0.9s linear infinite; }
+
     .barra {
       height: 100%;
-      background: linear-gradient(90deg, var(--morado), #a78bfa);
+      background: linear-gradient(90deg, var(--morado), #a78bfa, var(--morado));
+      background-size: 200% 100%;
+      animation: barraShimmer 1.4s linear infinite;
       border-radius: 99px;
       width: 0%;
       transition: width 0.4s ease;
@@ -725,28 +734,28 @@
     <!-- IZQUIERDA: HERO -->
     <section class="hero">
       <div class="hero-badge">ClipsToYou</div>
-      <h1 data-i18n="titulo">Divide tu video en <span style="color:var(--morado)">partes iguales</span></h1>
-      <p class="hero-sub" data-i18n="subtitulo">Sube tu video, elige la duración de cada parte y descárgalas todas de una vez. Listo para TikTok, YouTube Shorts o Instagram.</p>
+      <h1 id="heroTitulo" data-i18n="titulo">Divide tu video en <span style="color:var(--morado)">partes iguales</span></h1>
+      <p class="hero-sub" id="heroSub" data-i18n="subtitulo">Sube tu video, elige la duración de cada parte y descárgalas todas de una vez. Listo para TikTok, YouTube Shorts o Instagram.</p>
 
       <div class="pasos-lista">
         <div class="paso-item">
           <div class="paso-num">1</div>
-          <span data-i18n="paso1">Sube tu video</span>
+          <span id="heroPaso1" data-i18n="paso1">Sube tu video</span>
         </div>
         <div class="paso-item">
           <div class="paso-num">2</div>
-          <span data-i18n="paso2">Elige la duración o el número de partes</span>
+          <span id="heroPaso2" data-i18n="paso2">Elige la duración o el número de partes</span>
         </div>
         <div class="paso-item">
           <div class="paso-num">3</div>
-          <span data-i18n="paso3">Descarga todas las partes en un ZIP</span>
+          <span id="heroPaso3" data-i18n="paso3">Descarga todas las partes en un ZIP</span>
         </div>
       </div>
 
       <div class="features">
-        <div class="feature" data-i18n="f1">MP4, MOV, AVI, MKV — hasta 4 GB</div>
-        <div class="feature" data-i18n="f2">Sin instalaciones ni programas</div>
-        <div class="feature" data-i18n="f3">Partes ordenadas y listas para subir</div>
+        <div class="feature" id="heroF1" data-i18n="f1">MP4, MOV, AVI, MKV — hasta 4 GB</div>
+        <div class="feature" id="heroF2" data-i18n="f2">Sin instalaciones ni programas</div>
+        <div class="feature" id="heroF3" data-i18n="f3">Partes ordenadas y listas para subir</div>
       </div>
     </section>
 
@@ -846,7 +855,7 @@
         <!-- PANEL CONVERTIR 9:16 -->
         <div id="panelConvertir">
 
-          <div class="zona-subida" id="zonaSubida916" onclick="document.getElementById('inputVideo916').click()">
+          <div class="zona-subida" id="zonaSubida916" onclick="abrirSubida916()">
             <div class="icono">📱</div>
             <div class="z-titulo">Haz clic o arrastra tu video aquí</div>
             <div class="z-sub">Video horizontal (16:9) → salida vertical (9:16)</div>
@@ -871,9 +880,13 @@
             </div>
 
             <button class="btn-principal" id="btnConvertir916" onclick="convertir916()" style="opacity:0.4;cursor:not-allowed;">Convertir a 9:16</button>
-            <div class="progreso-contenedor" id="progreso916Cont" style="display:none">
-              <div class="barra-fondo"><div class="barra" id="barra916" style="width:0%"></div></div>
-              <p class="progreso-texto" id="progreso916Txt">Convirtiendo...</p>
+            <div class="progreso-contenedor" id="progreso916Cont" style="display:none;margin-top:14px;">
+              <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px;">
+                <span class="spinner" style="font-size:1.1rem;">⚙️</span>
+                <span id="progreso916Txt" style="color:#fff;font-size:0.88rem;font-weight:500;">Convirtiendo... puede tardar 1-3 min</span>
+              </div>
+              <div class="barra-fondo"><div class="barra" id="barra916" style="width:5%"></div></div>
+              <p style="color:var(--gris);font-size:0.75rem;margin-top:6px;text-align:center;">No cierres la página mientras se procesa</p>
             </div>
             <div class="error-box" id="errorBox916"></div>
 
@@ -1342,11 +1355,45 @@
     }
 
     // ─── TABS ─────────────────────────────────────────────────
+    const heroTextos = {
+      dividir: {
+        titulo: 'Divide tu video en <span style="color:var(--morado)">partes iguales</span>',
+        sub: 'Sube tu video, elige la duración de cada parte y descárgalas todas de una vez. Listo para TikTok, YouTube Shorts o Instagram.',
+        p1: 'Sube tu video', p2: 'Elige la duración o el número de partes', p3: 'Descarga todas las partes en un ZIP',
+        f1: 'MP4, MOV, AVI, MKV — hasta 4 GB', f2: 'Sin instalaciones ni programas', f3: 'Partes ordenadas y listas para subir'
+      },
+      convertir: {
+        titulo: 'Convierte tu video a <span style="color:var(--morado)">formato vertical 9:16</span>',
+        sub: 'Perfecto para TikTok, YouTube Shorts e Instagram Reels. Tu gameplay y tu cámara en un solo clip vertical.',
+        p1: 'Sube tu video horizontal', p2: 'Marca la zona de tu cámara', p3: 'Descarga tu clip vertical listo',
+        f1: 'MP4, MOV, AVI, MKV — hasta 4 GB', f2: 'Sin instalaciones ni programas', f3: 'Salida en 1080×1920 (9:16)'
+      }
+    };
+
     function cambiarTab(tab) {
       document.getElementById('panelDividir').style.display = tab === 'dividir' ? 'block' : 'none';
       document.getElementById('panelConvertir').style.display = tab === 'convertir' ? 'block' : 'none';
       document.getElementById('tabDividir').classList.toggle('activo', tab === 'dividir');
       document.getElementById('tabConvertir').classList.toggle('activo', tab === 'convertir');
+      const t = heroTextos[tab];
+      document.getElementById('heroTitulo').innerHTML = t.titulo;
+      document.getElementById('heroSub').textContent = t.sub;
+      document.getElementById('heroPaso1').textContent = t.p1;
+      document.getElementById('heroPaso2').textContent = t.p2;
+      document.getElementById('heroPaso3').textContent = t.p3;
+      document.getElementById('heroF1').textContent = t.f1;
+      document.getElementById('heroF2').textContent = t.f2;
+      document.getElementById('heroF3').textContent = t.f3;
+    }
+
+    function abrirSubida916() {
+      if (!usuarioActual || !usuarioActual.autenticado) {
+        if (confirm('Necesitas iniciar sesión para usar el convertidor. ¿Iniciar sesión ahora?')) {
+          window.location.href = '/auth/google';
+        }
+        return;
+      }
+      document.getElementById('inputVideo916').click();
     }
 
     // ─── CONVERTIDOR 9:16 ─────────────────────────────────────
@@ -1472,19 +1519,20 @@
 
       const btn = document.getElementById('btnConvertir916');
       btn.style.opacity = '0.4'; btn.style.cursor = 'not-allowed';
-      document.getElementById('progreso916Cont').style.display = '';
+      document.getElementById('progreso916Cont').style.display = 'block';
       document.getElementById('resultado916').style.display = 'none';
       document.getElementById('errorBox916').style.display = 'none';
 
       const barra = document.getElementById('barra916');
       const txt = document.getElementById('progreso916Txt');
+      barra.style.width = '5%';
       txt.textContent = 'Convirtiendo... puede tardar 1-3 min';
-      let prog = 0;
+      let prog = 5;
       const interval = setInterval(() => {
-        prog = Math.min(prog + (prog < 30 ? 2 : prog < 70 ? 1 : 0.3), 92);
+        prog = Math.min(prog + (prog < 30 ? 2 : prog < 65 ? 1 : 0.3), 90);
         barra.style.width = prog + '%';
-        txt.textContent = prog < 40 ? 'Convirtiendo... puede tardar 1-3 min' : prog < 75 ? 'Procesando video...' : 'Casi listo...';
-      }, 1000);
+        txt.textContent = prog < 35 ? 'Convirtiendo... puede tardar 1-3 min' : prog < 68 ? 'Procesando video...' : 'Casi listo...';
+      }, 1500);
 
       const fd = new FormData();
       fd.append('video', videoFile916);

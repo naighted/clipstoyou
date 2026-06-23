@@ -206,26 +206,34 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
     return res.status(401).json({ error: 'Debes iniciar sesión.' });
   }
 
-  if (req.user.plan === 'free' && req.user.conversion_gratis_usada) {
-    if (req.file) fs.unlinkSync(req.file.path);
-    return res.status(429).json({ error: 'Ya usaste tu conversión gratuita. Actualiza a Pro para más conversiones.' });
-  }
+  // limit disabled during testing
+  // if (req.user.plan === 'free' && req.user.conversion_gratis_usada) {
+  //   if (req.file) fs.unlinkSync(req.file.path);
+  //   return res.status(429).json({ error: 'Ya usaste tu conversión gratuita. Actualiza a Pro para más conversiones.' });
+  // }
 
   if (!req.file) return res.status(400).json({ error: 'No se subió ningún video.' });
 
-  const coords = ['topX','topY','topW','topH','botX','botY','botW','botH'].map(k => Math.round(Number(req.body[k])));
-  if (coords.some(isNaN) || coords.some(v => v < 0)) {
+  const camCoords = ['camX','camY','camW','camH'].map(k => Math.round(Number(req.body[k])));
+  if (camCoords.some(isNaN) || camCoords.some(v => v < 0)) {
     fs.unlinkSync(req.file.path);
     return res.status(400).json({ error: 'Coordenadas inválidas.' });
   }
-  const [tx, ty, tw, th, bx, by, bw, bh] = coords;
+  const [cx, cy, cw, ch] = camCoords;
+  const camPosicion = req.body.camPosicion === 'arriba' ? 'arriba' : 'abajo';
 
   const inputFile = req.file.path;
   const outputFile = path.join(os.tmpdir(), 'v916_' + Date.now() + '.mp4');
 
+  const filtroCam      = `crop=${cw}:${ch}:${cx}:${cy},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
+  const filtroGameplay = `scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
+
+  const topFilter = camPosicion === 'arriba' ? filtroCam : filtroGameplay;
+  const botFilter = camPosicion === 'arriba' ? filtroGameplay : filtroCam;
+
   const filterComplex = [
-    `[0:v]crop=${tw}:${th}:${tx}:${ty},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960[top]`,
-    `[0:v]crop=${bw}:${bh}:${bx}:${by},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960[bot]`,
+    `[0:v]${topFilter}[top]`,
+    `[0:v]${botFilter}[bot]`,
     `[top][bot]vstack=inputs=2[out]`
   ].join(';');
 
@@ -236,9 +244,10 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
     fs.unlinkSync(inputFile);
     if (code !== 0) return res.status(500).json({ error: 'Error al convertir el video.' });
 
-    if (req.user.plan === 'free') {
-      await supabase.from('usuarios').update({ conversion_gratis_usada: true }).eq('id', req.user.id);
-    }
+    // limit disabled during testing
+    // if (req.user.plan === 'free') {
+    //   await supabase.from('usuarios').update({ conversion_gratis_usada: true }).eq('id', req.user.id);
+    // }
 
     res.setHeader('Content-Type', 'video/mp4');
     res.setHeader('Content-Disposition', 'attachment; filename="video_9_16.mp4"');
