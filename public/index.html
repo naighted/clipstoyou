@@ -565,6 +565,19 @@
     }
     .btn-plan-free:hover { border-color: var(--morado); color: #fff; }
 
+    .btn-plan-promax {
+      background: linear-gradient(135deg, #f97316, #ea580c);
+      color: #fff;
+      border: none;
+      cursor: pointer;
+    }
+    .btn-plan-promax:hover { opacity: 0.88; }
+
+    .plan-card.promax-card {
+      border-color: #f97316;
+      background: linear-gradient(160deg, #1a1208, #141414);
+    }
+
     .btn-plan-pro {
       background: var(--morado);
       color: #fff;
@@ -914,31 +927,46 @@
 
       <div class="plan-card">
         <div class="plan-nombre">Free</div>
-        <div class="plan-precio">0€ <span data-i18n="planPer">/mes</span></div>
-        <div class="plan-desc" data-i18n="planFreeDesc">Para probar sin compromiso</div>
+        <div class="plan-precio">0€ <span>/mes</span></div>
+        <div class="plan-desc">Para probar sin compromiso</div>
         <div class="plan-features">
-          <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="pf1">3 videos al día</span></div>
-          <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="pf2">Archivos hasta 4 GB</span></div>
-          <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="pf3">ZIP con todas las partes</span></div>
-          <div class="plan-feat off"><span class="ic">❌</span> <span data-i18n="pf4">Sin límite diario</span></div>
-          <div class="plan-feat off"><span class="ic">❌</span> <span data-i18n="pf5">Novedades anticipadas</span></div>
+          <div class="plan-feat"><span class="ic">✅</span> 3 divisiones de video al día</div>
+          <div class="plan-feat"><span class="ic">✅</span> Archivos hasta 4 GB</div>
+          <div class="plan-feat"><span class="ic">✅</span> ZIP con todas las partes</div>
+          <div class="plan-feat"><span class="ic">✅</span> 2 conversiones 9:16 de prueba</div>
+          <div class="plan-feat off"><span class="ic">❌</span> Sin límite diario</div>
+          <div class="plan-feat off"><span class="ic">❌</span> Convertidor 9:16 ilimitado</div>
         </div>
-        <button class="btn-plan btn-plan-free" onclick="window.scrollTo({top:0,behavior:'smooth'})" data-i18n="btnFree">Empezar gratis</button>
+        <button class="btn-plan btn-plan-free" onclick="window.scrollTo({top:0,behavior:'smooth'})">Empezar gratis</button>
       </div>
 
       <div class="plan-card destacado">
-        <div class="plan-badge" data-i18n="planProBadge">✨ Más popular</div>
+        <div class="plan-badge">✨ Más popular</div>
         <div class="plan-nombre">Pro</div>
-        <div class="plan-precio">4,99€ <span data-i18n="planPer">/mes</span></div>
-        <div class="plan-desc" data-i18n="planProDesc">Para creadores de contenido</div>
+        <div class="plan-precio">4,99€ <span>/mes</span></div>
+        <div class="plan-desc">Para streamers y creadores</div>
         <div class="plan-features">
-          <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="pp1">Videos ilimitados al día</span></div>
-          <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="pp2">Archivos hasta 4 GB</span></div>
-          <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="pp3">ZIP con todas las partes</span></div>
-          <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="pp4">Sin límite diario</span></div>
-          <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="pp5">Acceso anticipado a novedades</span></div>
+          <div class="plan-feat"><span class="ic">✅</span> Divisiones de video ilimitadas</div>
+          <div class="plan-feat"><span class="ic">✅</span> Archivos hasta 4 GB</div>
+          <div class="plan-feat"><span class="ic">✅</span> ZIP con todas las partes</div>
+          <div class="plan-feat"><span class="ic">✅</span> 7 conversiones 9:16 por semana</div>
+          <div class="plan-feat"><span class="ic">✅</span> Acceso anticipado a novedades</div>
+          <div class="plan-feat off"><span class="ic">❌</span> Convertidor 9:16 ilimitado</div>
         </div>
-        <button class="btn-plan btn-plan-pro" onclick="irACheckout(event)" style="cursor:pointer;opacity:1;" data-i18n="btnPro">⚡ Suscribirse — 4,99€/mes</button>
+        <button class="btn-plan btn-plan-pro" onclick="irACheckout(event,'pro')" style="cursor:pointer;opacity:1;">⚡ Suscribirse — 4,99€/mes</button>
+      </div>
+
+      <div class="plan-card promax-card">
+        <div class="plan-badge" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;">🚀 Pro Max</div>
+        <div class="plan-nombre">Pro Max</div>
+        <div class="plan-precio">9,99€ <span>/mes</span></div>
+        <div class="plan-desc">Para creadores que publican a diario</div>
+        <div class="plan-features">
+          <div class="plan-feat"><span class="ic">✅</span> Todo lo de Pro</div>
+          <div class="plan-feat"><span class="ic">✅</span> Conversiones 9:16 <strong>ilimitadas</strong></div>
+          <div class="plan-feat"><span class="ic">✅</span> Acceso anticipado a novedades</div>
+        </div>
+        <button class="btn-plan btn-plan-promax" onclick="irACheckout(event,'promax')">🚀 Suscribirse — 9,99€/mes</button>
       </div>
 
     </div>
@@ -1332,7 +1360,7 @@
 
     cargarUsuario();
 
-    async function irACheckout(e) {
+    async function irACheckout(e, plan = 'pro') {
       if (!usuarioActual || !usuarioActual.autenticado) {
         window.location.href = '/auth/google';
         return;
@@ -1341,7 +1369,7 @@
       const textoOriginal = btn ? btn.textContent : '';
       if (btn) { btn.textContent = idioma === 'es' ? 'Redirigiendo...' : 'Redirecting...'; btn.disabled = true; }
       try {
-        const res = await fetch('/crear-checkout', { method: 'POST' });
+        const res = await fetch('/crear-checkout?plan=' + plan, { method: 'POST' });
         if (res.status === 401) { window.location.href = '/auth/google'; return; }
         const data = await res.json();
         if (data.url) {

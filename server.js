@@ -162,6 +162,11 @@ app.post('/api/sugerencia', express.json(), async (req, res) => {
 app.post('/crear-checkout', async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'No autenticado' });
 
+  const planType = req.query.plan === 'promax' ? 'promax' : 'pro';
+  const planInfo = planType === 'promax'
+    ? { name: 'ClipsToYou Pro Max', amount: 999 }
+    : { name: 'ClipsToYou Pro', amount: 499 };
+
   const BASE = process.env.CALLBACK_URL
     ? process.env.CALLBACK_URL.replace('/auth/google/callback', '')
     : 'http://localhost:3000';
@@ -173,14 +178,14 @@ app.post('/crear-checkout', async (req, res) => {
       line_items: [{
         price_data: {
           currency: 'eur',
-          product_data: { name: 'ClipsToYou Pro' },
-          unit_amount: 499,
+          product_data: { name: planInfo.name },
+          unit_amount: planInfo.amount,
           recurring: { interval: 'month' },
         },
         quantity: 1,
       }],
       customer_email: req.user.email,
-      metadata: { usuario_id: req.user.id },
+      metadata: { usuario_id: req.user.id, plan: planType },
       success_url: `${BASE}/?pago=ok`,
       cancel_url: `${BASE}/?pago=cancelado`,
     });
@@ -203,14 +208,12 @@ app.post('/webhook', express.raw({ type: 'application/json' }), async (req, res)
 
   if (event.type === 'checkout.session.completed') {
     const s = event.data.object;
-    const usuarioId = s.metadata.usuario_id;
-    const customerId = s.customer;
-    const subscriptionId = s.subscription;
+    const planNuevo = s.metadata?.plan === 'promax' ? 'promax' : 'pro';
     await supabase.from('usuarios').update({
-      plan: 'pro',
-      stripe_customer_id: customerId,
-      stripe_subscription_id: subscriptionId
-    }).eq('id', usuarioId);
+      plan: planNuevo,
+      stripe_customer_id: s.customer,
+      stripe_subscription_id: s.subscription
+    }).eq('id', s.metadata.usuario_id);
   }
 
   if (event.type === 'customer.subscription.deleted') {
@@ -250,11 +253,31 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
     return res.status(401).json({ error: 'Debes iniciar sesión.' });
   }
 
-  // limit disabled during testing
-  // if (req.user.plan === 'free' && req.user.conversion_gratis_usada) {
-  //   if (req.file) fs.unlinkSync(req.file.path);
-  //   return res.status(429).json({ error: 'Ya usaste tu conversión gratuita. Actualiza a Pro para más conversiones.' });
-  // }
+  // Límites por plan (admin siempre ilimitado)
+  const esAdminUser = req.user.email === ADMIN_EMAIL;
+  if (!esAdminUser) {
+    const plan = req.user.plan || 'free';
+    if (plan === 'free') {
+      if ((req.user.conversiones_916_total || 0) >= 2) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        return res.status(429).json({ error: 'Has usado tus 2 conversiones gratuitas. Actualiza a Pro para 7/semana o Pro Max para ilimitadas.', tipo: 'limite_free' });
+      }
+    } else if (plan === 'pro') {
+      const hoy = new Date().toISOString().split('T')[0];
+      const diasDesdeReset = req.user.reset_916_semana
+        ? Math.floor((new Date(hoy) - new Date(req.user.reset_916_semana)) / 86400000)
+        : 999;
+      if (diasDesdeReset >= 7) {
+        await supabase.from('usuarios').update({ conversiones_916_semana: 0, reset_916_semana: hoy }).eq('id', req.user.id);
+        req.user.conversiones_916_semana = 0;
+      }
+      if ((req.user.conversiones_916_semana || 0) >= 7) {
+        if (req.file) fs.unlinkSync(req.file.path);
+        return res.status(429).json({ error: 'Límite semanal de 7 conversiones alcanzado. Vuelve el lunes o actualiza a Pro Max para ilimitadas.', tipo: 'limite_pro' });
+      }
+    }
+    // promax: sin límite
+  }
 
   if (!req.file) return res.status(400).json({ error: 'No se subió ningún video.' });
 
@@ -311,10 +334,19 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
       return res.status(500).json({ error: 'Error al convertir el video. Código: ' + code });
     }
 
-    // limit disabled during testing
-    // if (req.user.plan === 'free') {
-    //   await supabase.from('usuarios').update({ conversion_gratis_usada: true }).eq('id', req.user.id);
-    // }
+    // Registrar uso
+    if (!esAdminUser) {
+      const plan = req.user.plan || 'free';
+      const hoy = new Date().toISOString().split('T')[0];
+      if (plan === 'free') {
+        await supabase.from('usuarios').update({ conversiones_916_total: (req.user.conversiones_916_total || 0) + 1 }).eq('id', req.user.id);
+      } else if (plan === 'pro') {
+        await supabase.from('usuarios').update({
+          conversiones_916_semana: (req.user.conversiones_916_semana || 0) + 1,
+          reset_916_semana: req.user.reset_916_semana || hoy
+        }).eq('id', req.user.id);
+      }
+    }
 
     res.setHeader('Content-Type', 'video/mp4');
     res.setHeader('Content-Disposition', 'attachment; filename="video_9_16.mp4"');
