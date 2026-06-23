@@ -7,6 +7,7 @@ const path = require('path');
 const fs = require('fs');
 const os = require('os');
 const session = require('express-session');
+const pgSession = require('connect-pg-simple')(session);
 const passport = require('passport');
 const GoogleStrategy = require('passport-google-oauth20').Strategy;
 const { createClient } = require('@supabase/supabase-js');
@@ -24,12 +25,22 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_KEY
 );
 
-app.use(session({
+const sessionConfig = {
   secret: process.env.SESSION_SECRET || 'secreto',
   resave: false,
   saveUninitialized: false,
-  cookie: { maxAge: 7 * 24 * 60 * 60 * 1000 }
-}));
+  cookie: { maxAge: 30 * 24 * 60 * 60 * 1000 } // 30 días
+};
+
+if (process.env.DATABASE_URL) {
+  sessionConfig.store = new pgSession({
+    conString: process.env.DATABASE_URL,
+    tableName: 'sessions',
+    createTableIfMissing: true
+  });
+}
+
+app.use(session(sessionConfig));
 
 app.use(passport.initialize());
 app.use(passport.session());
