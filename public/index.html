@@ -1343,8 +1343,8 @@
 
     // ─── TABS ─────────────────────────────────────────────────
     function cambiarTab(tab) {
-      document.getElementById('panelDividir').style.display = tab === 'dividir' ? '' : 'none';
-      document.getElementById('panelConvertir').style.display = tab === 'convertir' ? '' : 'none';
+      document.getElementById('panelDividir').style.display = tab === 'dividir' ? 'block' : 'none';
+      document.getElementById('panelConvertir').style.display = tab === 'convertir' ? 'block' : 'none';
       document.getElementById('tabDividir').classList.toggle('activo', tab === 'dividir');
       document.getElementById('tabConvertir').classList.toggle('activo', tab === 'convertir');
     }
