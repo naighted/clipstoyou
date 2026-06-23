@@ -870,7 +870,7 @@
               <span class="sel-badge abajo"  id="badgeAbajo">⬇️ Abajo: sin seleccionar</span>
             </div>
 
-            <button class="btn-principal" id="btnConvertir916" disabled onclick="convertir916()">Convertir a 9:16</button>
+            <button class="btn-principal" id="btnConvertir916" onclick="convertir916()" style="opacity:0.4;cursor:not-allowed;">Convertir a 9:16</button>
             <div class="progreso-contenedor" id="progreso916Cont" style="display:none">
               <div class="barra-fondo"><div class="barra" id="barra916" style="width:0%"></div></div>
               <p class="progreso-texto" id="progreso916Txt">Convirtiendo...</p>
@@ -1444,7 +1444,10 @@
       const bb = document.getElementById('badgeAbajo');
       ba.textContent = zonaArriba ? `⬆️ Arriba: seleccionado ✓` : '⬆️ Arriba: sin seleccionar';
       bb.textContent = zonaAbajo  ? `⬇️ Abajo: seleccionado ✓`  : '⬇️ Abajo: sin seleccionar';
-      document.getElementById('btnConvertir916').disabled = !(zonaArriba && zonaAbajo);
+      const btnC = document.getElementById('btnConvertir916');
+      const listo = !!(zonaArriba && zonaAbajo);
+      btnC.style.opacity = listo ? '1' : '0.4';
+      btnC.style.cursor = listo ? 'pointer' : 'not-allowed';
     }
 
     // Canvas mouse events
@@ -1501,7 +1504,8 @@
 
     async function convertir916() {
       if (!usuarioActual || !usuarioActual.autenticado) { window.location.href = '/auth/google'; return; }
-      if (!zonaArriba || !zonaAbajo || !videoFile916) return;
+      if (!zonaArriba || !zonaAbajo) { alert('Selecciona ambas zonas primero.'); return; }
+      if (!videoFile916) { alert('No hay video cargado.'); return; }
 
       document.getElementById('btnConvertir916').disabled = true;
       document.getElementById('progreso916Cont').style.display = '';
