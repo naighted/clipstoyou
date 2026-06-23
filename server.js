@@ -237,12 +237,18 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
     `[top][bot]vstack=inputs=2[out]`
   ].join(';');
 
-  const args = ['-i', inputFile, '-filter_complex', filterComplex, '-map', '[out]', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'fast', '-crf', '23', '-y', outputFile];
+  const args = ['-i', inputFile, '-filter_complex', filterComplex, '-map', '[out]', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-y', outputFile];
   const ffmpeg = spawn(FFMPEG, args);
 
+  let stderrLog = '';
+  ffmpeg.stderr.on('data', d => { stderrLog += d.toString(); });
+
   ffmpeg.on('close', async (code) => {
-    fs.unlinkSync(inputFile);
-    if (code !== 0) return res.status(500).json({ error: 'Error al convertir el video.' });
+    try { fs.unlinkSync(inputFile); } catch(e) {}
+    if (code !== 0) {
+      console.error('FFmpeg 9:16 error (code', code, '):', stderrLog.slice(-500));
+      return res.status(500).json({ error: 'Error al convertir el video. Código: ' + code });
+    }
 
     // limit disabled during testing
     // if (req.user.plan === 'free') {

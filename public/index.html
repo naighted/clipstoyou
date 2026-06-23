@@ -1544,14 +1544,14 @@
         const resp = await fetch('/convertir-916', { method: 'POST', body: fd });
         clearInterval(interval);
         if (!resp.ok) {
-          const err = await resp.json().catch(() => ({ error: 'Error desconocido' }));
-          document.getElementById('errorBox916').textContent = '❌ ' + (err.error || 'Error al convertir');
-          document.getElementById('errorBox916').style.display = 'block';
+          const rawText = await resp.text().catch(() => '');
+          let errMsg = 'Error ' + resp.status;
+          try { errMsg = JSON.parse(rawText).error || errMsg; } catch(e) { if (rawText) errMsg += ': ' + rawText.slice(0, 120); }
+          const box = document.getElementById('errorBox916');
+          box.textContent = resp.status === 429 ? '🔒 Ya usaste tu conversión gratuita. Actualiza a Pro para más.' : '❌ ' + errMsg;
+          box.style.display = 'block';
           document.getElementById('progreso916Cont').style.display = 'none';
           habilitarBtn916();
-          if (resp.status === 429) {
-            document.getElementById('errorBox916').textContent = '🔒 Ya usaste tu conversión gratuita. Actualiza a Pro para más.';
-          }
           return;
         }
         barra.style.width = '100%';
@@ -1560,7 +1560,7 @@
         document.getElementById('linkDescarga916').href = url;
         document.getElementById('linkDescarga916').download = 'video_9_16.mp4';
         document.getElementById('progreso916Cont').style.display = 'none';
-        document.getElementById('resultado916').style.display = '';
+        document.getElementById('resultado916').style.display = 'block';
         habilitarBtn916();
       } catch(err) {
         clearInterval(interval);
