@@ -899,6 +899,7 @@
             <div class="icono">📱</div>
             <div class="z-titulo">Haz clic o arrastra tu video aquí</div>
             <div class="z-sub" id="zonaSubTxt">Video horizontal (16:9) → salida vertical (9:16)</div>
+            <div style="font-size:0.72rem;color:#666;margin-top:4px;" id="zonaLimiteTxt">⏱ Máx. 60 min · 4 GB</div>
           </div>
           <input type="file" id="inputVideo916" accept="video/*" style="display:none">
 
@@ -1149,6 +1150,8 @@
       document.getElementById('btnIdioma').textContent = idioma === 'es' ? 'EN' : 'ES';
       document.documentElement.lang = idioma;
       actualizarEstimacion();
+      const limEl = document.getElementById('zonaLimiteTxt');
+      if (limEl) limEl.textContent = idioma === 'es' ? '⏱ Máx. 60 min · 4 GB' : '⏱ Max. 60 min · 4 GB';
     }
 
     document.getElementById('btnIdioma').addEventListener('click', () => {
@@ -1562,12 +1565,34 @@
       if (file && file.type.startsWith('video/')) { videoFile916 = file; cargarFrame916(file); }
     });
 
+    const MAX_DURACION_MIN = 60;
+
     function cargarFrame916(file) {
       const url = URL.createObjectURL(file);
       const vid = document.createElement('video');
       vid.src = url;
       vid.muted = true;
-      vid.currentTime = 1;
+
+      vid.addEventListener('loadedmetadata', () => {
+        if (vid.duration > MAX_DURACION_MIN * 60) {
+          URL.revokeObjectURL(url);
+          videoFile916 = null;
+          const mins = Math.round(vid.duration / 60);
+          const lang = document.documentElement.lang || 'es';
+          const msg = lang === 'en'
+            ? `⏱ Video too long (${mins} min). Max ${MAX_DURACION_MIN} min for 9:16 conversion. For full episodes, use a local editor like CapCut or DaVinci Resolve.`
+            : `⏱ Video demasiado largo (${mins} min). Máximo ${MAX_DURACION_MIN} min para conversión 9:16. Para episodios completos usa un editor local como CapCut o DaVinci Resolve.`;
+          const errBox = document.getElementById('errorBox916');
+          errBox.textContent = msg;
+          errBox.style.display = 'block';
+          document.getElementById('sinCamNombreArchivo').textContent = '—';
+          document.getElementById('conCamNombreArchivo').textContent = '—';
+          zonaSubida916.style.display = 'flex';
+          return;
+        }
+        vid.currentTime = 1;
+      });
+
       vid.addEventListener('seeked', () => {
         videoNativeW = vid.videoWidth;
         videoNativeH = vid.videoHeight;
@@ -1593,6 +1618,7 @@
           document.getElementById('conCamNombreArchivo').textContent = file.name;
         }
       });
+
       vid.load();
     }
 
