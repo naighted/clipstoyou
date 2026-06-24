@@ -122,15 +122,16 @@ app.get('/api/usuario', async (req, res) => {
     req.user.usos_hoy = 0;
   }
 
+  const esAdminReq = req.user.email === (process.env.ADMIN_EMAIL || 'felixfernandezcardenas@hotmail.com');
   res.json({
     autenticado: true,
     nombre: req.user.nombre,
     email: req.user.email,
     plan: req.user.plan,
-    isAdmin: req.user.email === ADMIN_EMAIL,
+    isAdmin: esAdminReq,
     usos_hoy: req.user.usos_hoy,
-    limite: LIMITE_DIARIO,
-    restantes: Math.max(0, LIMITE_DIARIO - req.user.usos_hoy)
+    limite: esAdminReq ? null : LIMITE_DIARIO,
+    restantes: esAdminReq ? null : Math.max(0, LIMITE_DIARIO - req.user.usos_hoy)
   });
 });
 
@@ -419,7 +420,8 @@ app.post('/dividir', upload.single('video'), async (req, res) => {
     await supabase.from('usuarios').update({ usos_hoy: 0, ultimo_reset: hoy }).eq('id', req.user.id);
   }
 
-  if (req.user.plan === 'free' && usos >= LIMITE_DIARIO) {
+  const esAdminDiv = req.user.email === ADMIN_EMAIL;
+  if (!esAdminDiv && req.user.plan === 'free' && usos >= LIMITE_DIARIO) {
     if (req.file) fs.unlinkSync(req.file.path);
     return res.status(429).json({ error: `Has alcanzado el límite de ${LIMITE_DIARIO} videos gratis hoy. Vuelve mañana.` });
   }

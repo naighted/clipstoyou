@@ -1419,10 +1419,12 @@
       const t = T[idioma];
 
       if (data.autenticado) {
-        const badgeClass = data.restantes >= 2 ? 'ok' : data.restantes === 1 ? 'poco' : 'cero';
+        const badgeStr = data.isAdmin
+          ? `<span class="usos-badge ok">∞</span>`
+          : (() => { const bc = data.restantes >= 2 ? 'ok' : data.restantes === 1 ? 'poco' : 'cero'; return `<span class="usos-badge ${bc}">${data.restantes}/${data.limite} ${idioma === 'es' ? 'hoy' : 'today'}</span>`; })();
         headerAuth.innerHTML = `
           <div class="usuario-info">
-            <span class="usos-badge ${badgeClass}">${data.restantes}/${data.limite} ${idioma === 'es' ? 'hoy' : 'today'}</span>
+            ${badgeStr}
             <span>${data.nombre.split(' ')[0]}</span>
             ${data.isAdmin ? '<a href="/admin" style="color:#7c6fff;font-size:0.78rem;text-decoration:none;font-weight:600;" title="Panel de administración">⚙ Admin</a>' : ''}
             <a href="/logout" class="btn-logout">${idioma === 'es' ? 'Salir' : 'Logout'}</a>
