@@ -265,14 +265,25 @@ const upload = multer({
   limits: { fileSize: 4 * 1024 * 1024 * 1024 }
 });
 
-// Convertir video a formato 9:16
+// In-memory job store for background video processing
+const jobs916 = new Map();
+setInterval(() => {
+  const cutoff = Date.now() - 30 * 60 * 1000;
+  for (const [id, job] of jobs916.entries()) {
+    if (job.createdAt < cutoff) {
+      if (job.outputFile) try { fs.unlinkSync(job.outputFile); } catch(e) {}
+      jobs916.delete(id);
+    }
+  }
+}, 15 * 60 * 1000);
+
+// Convertir video a formato 9:16 — devuelve jobId inmediatamente, procesa en background
 app.post('/convertir-916', upload.single('video'), async (req, res) => {
   if (!req.user) {
     if (req.file) fs.unlinkSync(req.file.path);
     return res.status(401).json({ error: 'Debes iniciar sesión.' });
   }
 
-  // Límites por plan (admin siempre ilimitado)
   const esAdminUser = req.user.email === ADMIN_EMAIL;
   if (!esAdminUser) {
     const plan = req.user.plan || 'free';
@@ -295,18 +306,17 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
         return res.status(429).json({ error: 'Límite semanal de 7 conversiones alcanzado. Vuelve el lunes o actualiza a Pro Max para ilimitadas.', tipo: 'limite_pro' });
       }
     }
-    // promax: sin límite
   }
 
   if (!req.file) return res.status(400).json({ error: 'No se subió ningún video.' });
 
   const modoCam = req.body.modoCam === 'sin-cam' ? 'sin-cam' : 'con-cam';
   const inputFile = req.file.path;
-  const outputFile = path.join(os.tmpdir(), 'v916_' + Date.now() + '.mp4');
+  const jobId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+  const outputFile = path.join(os.tmpdir(), 'v916_' + jobId + '.mp4');
   let args;
 
   if (modoCam === 'sin-cam') {
-    // Zoom automático: escala y recorta al centro para rellenar 1080x1920 (9:16 completo)
     const filtro = `scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920`;
     args = ['-i', inputFile, '-vf', filtro, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-c:a', 'aac', '-b:a', '128k', '-y', outputFile];
   } else {
@@ -340,8 +350,13 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
     const filterComplex = [`[0:v]${topFilter}[top]`, `[0:v]${botFilter}[bot]`, `[top][bot]vstack=inputs=2[out]`].join(';');
     args = ['-i', inputFile, '-filter_complex', filterComplex, '-map', '[out]', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-y', outputFile];
   }
-  const ffmpeg = spawn(FFMPEG, args);
 
+  // Register job and respond immediately — no timeout possible
+  jobs916.set(jobId, { status: 'processing', createdAt: Date.now(), outputFile: null, error: null });
+  res.json({ jobId });
+
+  // Process in background
+  const ffmpeg = spawn(FFMPEG, args);
   let stderrLog = '';
   ffmpeg.stderr.on('data', d => { stderrLog += d.toString(); });
 
@@ -349,10 +364,10 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
     try { fs.unlinkSync(inputFile); } catch(e) {}
     if (code !== 0) {
       console.error('FFmpeg 9:16 error (code', code, '):', stderrLog.slice(-500));
-      return res.status(500).json({ error: 'Error al convertir el video. Código: ' + code });
+      jobs916.set(jobId, { ...jobs916.get(jobId), status: 'error', error: 'Error al convertir. Código: ' + code });
+      return;
     }
 
-    // Registrar uso
     if (!esAdminUser) {
       const plan = req.user.plan || 'free';
       const hoy = new Date().toISOString().split('T')[0];
@@ -366,11 +381,26 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
       }
     }
 
-    res.setHeader('Content-Type', 'video/mp4');
-    res.setHeader('Content-Disposition', 'attachment; filename="video_9_16.mp4"');
-    const stream = fs.createReadStream(outputFile);
-    stream.pipe(res);
-    stream.on('end', () => { try { fs.unlinkSync(outputFile); } catch(e){} });
+    jobs916.set(jobId, { ...jobs916.get(jobId), status: 'done', outputFile });
+  });
+});
+
+app.get('/api/job916/:jobId', (req, res) => {
+  const job = jobs916.get(req.params.jobId);
+  if (!job) return res.status(404).json({ error: 'Job no encontrado' });
+  res.json({ status: job.status, error: job.error });
+});
+
+app.get('/api/job916/:jobId/download', (req, res) => {
+  const job = jobs916.get(req.params.jobId);
+  if (!job || job.status !== 'done' || !job.outputFile) return res.status(404).json({ error: 'No disponible' });
+  res.setHeader('Content-Type', 'video/mp4');
+  res.setHeader('Content-Disposition', 'attachment; filename="video_9_16.mp4"');
+  const stream = fs.createReadStream(job.outputFile);
+  stream.pipe(res);
+  stream.on('end', () => {
+    try { fs.unlinkSync(job.outputFile); } catch(e) {}
+    jobs916.delete(req.params.jobId);
   });
 });
 
