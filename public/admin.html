@@ -33,6 +33,7 @@
     td { padding: 10px 14px; border-bottom: 1px solid #1a1a1a; }
     tr:hover td { background: #111; }
     .badge { display: inline-block; padding: 2px 10px; border-radius: 99px; font-size: 0.72rem; font-weight: 600; }
+    .badge.promax { background: rgba(249,115,22,0.2); color: #fb923c; }
     .badge.pro { background: rgba(124,111,255,0.2); color: #a78bfa; }
     .badge.free { background: rgba(255,255,255,0.07); color: #888; }
     .num { font-variant-numeric: tabular-nums; }
@@ -69,7 +70,8 @@
 <!-- STATS -->
 <div class="stats">
   <div class="stat"><div class="label">Total usuarios</div><div class="val" id="sTotal">…</div></div>
-  <div class="stat pro"><div class="label">Suscriptores Pro</div><div class="val" id="sPro">…</div></div>
+  <div class="stat pro"><div class="label">Pro</div><div class="val" id="sPro">…</div></div>
+  <div class="stat" style="border-color:#f97316;"><div class="label">Pro Max</div><div class="val" id="sProMax" style="color:#fb923c;">…</div></div>
   <div class="stat"><div class="label">Plan Free</div><div class="val" id="sFree">…</div></div>
   <div class="stat clips"><div class="label">Clips generados (total)</div><div class="val" id="sClips">…</div></div>
 </div>
@@ -81,6 +83,7 @@
     <input class="search" id="buscar" type="text" placeholder="Buscar por nombre o email…" oninput="filtrarTabla()">
     <select id="filtroPlan" onchange="filtrarTabla()">
       <option value="">Todos los planes</option>
+      <option value="promax">Pro Max</option>
       <option value="pro">Pro</option>
       <option value="free">Free</option>
     </select>
@@ -110,6 +113,7 @@
     const d = await r.json();
     document.getElementById('sTotal').textContent = d.totalUsuarios;
     document.getElementById('sPro').textContent = d.totalPro;
+    document.getElementById('sProMax').textContent = d.totalProMax || 0;
     document.getElementById('sFree').textContent = d.totalFree;
     document.getElementById('sClips').textContent = d.totalClips;
     todosUsuarios = d.usuarios || [];
@@ -123,7 +127,7 @@
       <tr>
         <td>${esc(u.nombre || '-')}</td>
         <td style="color:#888">${esc(u.email || '-')}</td>
-        <td><span class="badge ${u.plan === 'pro' ? 'pro' : 'free'}">${u.plan === 'pro' ? '⚡ Pro' : 'Free'}</span></td>
+        <td><span class="badge ${u.plan === 'promax' ? 'promax' : u.plan === 'pro' ? 'pro' : 'free'}">${u.plan === 'promax' ? '🚀 Pro Max' : u.plan === 'pro' ? '⚡ Pro' : 'Free'}</span></td>
         <td class="num">${u.usos_hoy || 0}</td>
         <td class="num" style="font-weight:600">${u.total_usos || 0}</td>
       </tr>

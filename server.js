@@ -152,8 +152,9 @@ app.get('/api/admin/stats', esAdmin, async (req, res) => {
     .order('total_usos', { ascending: false, nullsFirst: false });
   const total = usuarios?.length || 0;
   const pro = usuarios?.filter(u => u.plan === 'pro').length || 0;
+  const promax = usuarios?.filter(u => u.plan === 'promax').length || 0;
   const totalClips = usuarios?.reduce((s, u) => s + (u.total_usos || 0), 0) || 0;
-  res.json({ usuarios: usuarios || [], totalUsuarios: total, totalPro: pro, totalFree: total - pro, totalClips });
+  res.json({ usuarios: usuarios || [], totalUsuarios: total, totalPro: pro, totalProMax: promax, totalFree: total - pro - promax, totalClips });
 });
 
 app.get('/api/admin/sugerencias', esAdmin, async (req, res) => {
