@@ -1619,30 +1619,62 @@
       btnC.style.cursor = zonaCam ? 'pointer' : 'not-allowed';
     }
 
-    // Canvas mouse events — single cam zone selection
-    canvasFrame.addEventListener('mousedown', e => {
-      isDrawing = true;
+    // Canvas interaction — draw new zone or drag existing one
+    let isMoveMode = false, moveOffsetX = 0, moveOffsetY = 0;
+
+    function canvasCoords(clientX, clientY) {
       const r = canvasFrame.getBoundingClientRect();
-      startX = (e.clientX - r.left) * (canvasFrame.width / r.width);
-      startY = (e.clientY - r.top) * (canvasFrame.height / r.height);
+      return {
+        x: (clientX - r.left) * (canvasFrame.width / r.width),
+        y: (clientY - r.top) * (canvasFrame.height / r.height)
+      };
+    }
+
+    function insideZona(x, y) {
+      if (!zonaCam) return false;
+      return x >= zonaCam.x && x <= zonaCam.x + zonaCam.w &&
+             y >= zonaCam.y && y <= zonaCam.y + zonaCam.h;
+    }
+
+    function clampZona(z) {
+      const x = Math.max(0, Math.min(z.x, canvasFrame.width - z.w));
+      const y = Math.max(0, Math.min(z.y, canvasFrame.height - z.h));
+      return { x: Math.round(x), y: Math.round(y), w: z.w, h: z.h };
+    }
+
+    // Mouse events
+    canvasFrame.addEventListener('mousedown', e => {
+      const { x, y } = canvasCoords(e.clientX, e.clientY);
+      if (insideZona(x, y)) {
+        isMoveMode = true; isDrawing = false;
+        moveOffsetX = x - zonaCam.x; moveOffsetY = y - zonaCam.y;
+        canvasFrame.style.cursor = 'grabbing';
+      } else {
+        isDrawing = true; isMoveMode = false;
+        startX = x; startY = y;
+      }
     });
 
     canvasFrame.addEventListener('mousemove', e => {
-      if (!isDrawing) return;
-      const r = canvasFrame.getBoundingClientRect();
-      const curX = (e.clientX - r.left) * (canvasFrame.width / r.width);
-      const curY = (e.clientY - r.top) * (canvasFrame.height / r.height);
-      ctx916.putImageData(frameImgData, 0, 0);
-      dibujarRect({ x: Math.min(startX, curX), y: Math.min(startY, curY), w: Math.abs(curX - startX), h: Math.abs(curY - startY) }, '#7c6fff', '🎥 CAM');
+      const { x, y } = canvasCoords(e.clientX, e.clientY);
+      if (isMoveMode && zonaCam) {
+        zonaCam = clampZona({ x: x - moveOffsetX, y: y - moveOffsetY, w: zonaCam.w, h: zonaCam.h });
+        ctx916.putImageData(frameImgData, 0, 0);
+        dibujarRect(zonaCam, '#7c6fff', '🎥 CAM');
+      } else if (isDrawing) {
+        ctx916.putImageData(frameImgData, 0, 0);
+        dibujarRect({ x: Math.min(startX, x), y: Math.min(startY, y), w: Math.abs(x - startX), h: Math.abs(y - startY) }, '#7c6fff', '🎥 CAM');
+      } else {
+        canvasFrame.style.cursor = insideZona(x, y) ? 'grab' : 'crosshair';
+      }
     });
 
     canvasFrame.addEventListener('mouseup', e => {
+      if (isMoveMode) { isMoveMode = false; canvasFrame.style.cursor = 'grab'; actualizarBadges916(); return; }
       if (!isDrawing) return;
       isDrawing = false;
-      const r = canvasFrame.getBoundingClientRect();
-      const endX = (e.clientX - r.left) * (canvasFrame.width / r.width);
-      const endY = (e.clientY - r.top) * (canvasFrame.height / r.height);
-      const zona = { x: Math.round(Math.min(startX, endX)), y: Math.round(Math.min(startY, endY)), w: Math.round(Math.abs(endX - startX)), h: Math.round(Math.abs(endY - startY)) };
+      const { x, y } = canvasCoords(e.clientX, e.clientY);
+      const zona = { x: Math.round(Math.min(startX, x)), y: Math.round(Math.min(startY, y)), w: Math.round(Math.abs(x - startX)), h: Math.round(Math.abs(y - startY)) };
       if (zona.w < 10 || zona.h < 10) return;
       zonaCam = zona;
       ctx916.putImageData(frameImgData, 0, 0);
@@ -1650,10 +1682,47 @@
       actualizarBadges916();
     });
 
-    // Touch support
-    canvasFrame.addEventListener('touchstart', e => { e.preventDefault(); isDrawing = true; const r = canvasFrame.getBoundingClientRect(); startX = (e.touches[0].clientX - r.left) * (canvasFrame.width / r.width); startY = (e.touches[0].clientY - r.top) * (canvasFrame.height / r.height); }, { passive: false });
-    canvasFrame.addEventListener('touchmove', e => { e.preventDefault(); if (!isDrawing) return; const r = canvasFrame.getBoundingClientRect(); const cx = (e.touches[0].clientX - r.left) * (canvasFrame.width / r.width); const cy = (e.touches[0].clientY - r.top) * (canvasFrame.height / r.height); ctx916.putImageData(frameImgData, 0, 0); dibujarRect({ x: Math.min(startX, cx), y: Math.min(startY, cy), w: Math.abs(cx - startX), h: Math.abs(cy - startY) }, '#7c6fff', '🎥 CAM'); }, { passive: false });
-    canvasFrame.addEventListener('touchend', e => { e.preventDefault(); if (!isDrawing) return; isDrawing = false; const r = canvasFrame.getBoundingClientRect(); const ex = (e.changedTouches[0].clientX - r.left) * (canvasFrame.width / r.width); const ey = (e.changedTouches[0].clientY - r.top) * (canvasFrame.height / r.height); const zona = { x: Math.round(Math.min(startX, ex)), y: Math.round(Math.min(startY, ey)), w: Math.round(Math.abs(ex - startX)), h: Math.round(Math.abs(ey - startY)) }; if (zona.w < 10 || zona.h < 10) return; zonaCam = zona; ctx916.putImageData(frameImgData, 0, 0); dibujarRect(zonaCam, '#7c6fff', '🎥 CAM'); actualizarBadges916(); }, { passive: false });
+    canvasFrame.addEventListener('mouseleave', () => { if (isMoveMode || isDrawing) { isMoveMode = false; isDrawing = false; } });
+
+    // Touch events (move or draw)
+    canvasFrame.addEventListener('touchstart', e => {
+      e.preventDefault();
+      const { x, y } = canvasCoords(e.touches[0].clientX, e.touches[0].clientY);
+      if (insideZona(x, y)) {
+        isMoveMode = true; isDrawing = false;
+        moveOffsetX = x - zonaCam.x; moveOffsetY = y - zonaCam.y;
+      } else {
+        isDrawing = true; isMoveMode = false;
+        startX = x; startY = y;
+      }
+    }, { passive: false });
+
+    canvasFrame.addEventListener('touchmove', e => {
+      e.preventDefault();
+      const { x, y } = canvasCoords(e.touches[0].clientX, e.touches[0].clientY);
+      if (isMoveMode && zonaCam) {
+        zonaCam = clampZona({ x: x - moveOffsetX, y: y - moveOffsetY, w: zonaCam.w, h: zonaCam.h });
+        ctx916.putImageData(frameImgData, 0, 0);
+        dibujarRect(zonaCam, '#7c6fff', '🎥 CAM');
+      } else if (isDrawing) {
+        ctx916.putImageData(frameImgData, 0, 0);
+        dibujarRect({ x: Math.min(startX, x), y: Math.min(startY, y), w: Math.abs(x - startX), h: Math.abs(y - startY) }, '#7c6fff', '🎥 CAM');
+      }
+    }, { passive: false });
+
+    canvasFrame.addEventListener('touchend', e => {
+      e.preventDefault();
+      if (isMoveMode) { isMoveMode = false; actualizarBadges916(); return; }
+      if (!isDrawing) return;
+      isDrawing = false;
+      const { x, y } = canvasCoords(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
+      const zona = { x: Math.round(Math.min(startX, x)), y: Math.round(Math.min(startY, y)), w: Math.round(Math.abs(x - startX)), h: Math.round(Math.abs(y - startY)) };
+      if (zona.w < 10 || zona.h < 10) return;
+      zonaCam = zona;
+      ctx916.putImageData(frameImgData, 0, 0);
+      dibujarRect(zonaCam, '#7c6fff', '🎥 CAM');
+      actualizarBadges916();
+    }, { passive: false });
 
     async function convertir916() {
       if (!usuarioActual || !usuarioActual.autenticado) { window.location.href = '/auth/google'; return; }
