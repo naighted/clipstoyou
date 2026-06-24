@@ -308,7 +308,7 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
   if (modoCam === 'sin-cam') {
     // Zoom automático: escala y recorta al centro para rellenar 1080x1920 (9:16 completo)
     const filtro = `scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920`;
-    args = ['-i', inputFile, '-vf', filtro, '-map', '0:a?', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-y', outputFile];
+    args = ['-i', inputFile, '-vf', filtro, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-c:a', 'aac', '-b:a', '128k', '-y', outputFile];
   } else {
     const camCoords = ['camX','camY','camW','camH'].map(k => Math.round(Number(req.body[k])));
     if (camCoords.some(isNaN) || camCoords.some(v => v < 0)) {

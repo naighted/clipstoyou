@@ -883,7 +883,19 @@
 
           <!-- Editor CON webcam -->
           <div id="editor916" style="display:none">
-            <p style="font-size:0.82rem;color:var(--gris);margin-bottom:10px;">📌 Dibuja un rectángulo sobre <strong style="color:#fff">tu cámara/webcam</strong>. El gameplay se detecta automáticamente.</p>
+            <div style="display:flex;align-items:center;gap:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:8px 12px;margin-bottom:10px;">
+              <span style="font-size:1rem;">🎬</span>
+              <span id="conCamNombreArchivo" style="font-size:0.82rem;color:#ccc;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</span>
+              <button onclick="resetConvertir916()" style="background:none;border:1px solid #333;color:#888;padding:3px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;">Cambiar</button>
+            </div>
+            <p style="font-size:0.82rem;color:var(--gris);margin-bottom:6px;">📌 Dibuja un rectángulo sobre <strong style="color:#fff">tu cámara/webcam</strong>. El gameplay se detecta automáticamente.</p>
+            <p style="font-size:0.75rem;color:#555;margin-bottom:8px;">O elige una posición predefinida:</p>
+            <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:10px;">
+              <button onclick="setPresetCam('bl')" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#aaa;padding:4px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;">↙ Abajo izq</button>
+              <button onclick="setPresetCam('br')" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#aaa;padding:4px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;">↘ Abajo der</button>
+              <button onclick="setPresetCam('tl')" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#aaa;padding:4px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;">↖ Arriba izq</button>
+              <button onclick="setPresetCam('tr')" style="background:#1a1a1a;border:1px solid #2a2a2a;color:#aaa;padding:4px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;">↗ Arriba der</button>
+            </div>
 
             <div class="canvas-wrap" id="canvasWrap">
               <canvas id="canvasFrame"></canvas>
@@ -1478,6 +1490,8 @@
       zonaCam = null;
       videoFile916 = null;
       blob916 = null;
+      document.getElementById('conCamNombreArchivo').textContent = '—';
+      document.getElementById('sinCamNombreArchivo').textContent = '—';
       document.getElementById('editor916').style.display = 'none';
       document.getElementById('editorSinCam916').style.display = 'none';
       document.getElementById('resultado916').style.display = 'none';
@@ -1537,9 +1551,27 @@
         } else {
           document.getElementById('editor916').style.display = 'block';
           document.getElementById('editorSinCam916').style.display = 'none';
+          document.getElementById('conCamNombreArchivo').textContent = file.name;
         }
       });
       vid.load();
+    }
+
+    function setPresetCam(pos) {
+      if (!videoNativeW || !videoNativeH) return;
+      const W = videoNativeW, H = videoNativeH;
+      const cw = Math.round(W * 0.28), ch = Math.round(H * 0.28);
+      const positions = {
+        bl: { x: 0,       y: H - ch },
+        br: { x: W - cw,  y: H - ch },
+        tl: { x: 0,       y: 0      },
+        tr: { x: W - cw,  y: 0      },
+      };
+      const p = positions[pos];
+      zonaCam = { x: p.x, y: p.y, w: cw, h: ch };
+      ctx916.putImageData(frameImgData, 0, 0);
+      dibujarRect(zonaCam, '#7c6fff', '🎥 CAM');
+      actualizarBadges916();
     }
 
     function setCamPos(pos) {
