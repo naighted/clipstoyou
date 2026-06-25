@@ -1419,7 +1419,7 @@
       const t = T[idioma];
 
       if (data.autenticado) {
-        const badgeStr = data.isAdmin
+        const badgeStr = (data.isAdmin || data.plan === 'pro' || data.plan === 'promax')
           ? `<span class="usos-badge ok">∞</span>`
           : (() => { const bc = data.restantes >= 2 ? 'ok' : data.restantes === 1 ? 'poco' : 'cero'; return `<span class="usos-badge ${bc}">${data.restantes}/${data.limite} ${idioma === 'es' ? 'hoy' : 'today'}</span>`; })();
         headerAuth.innerHTML = `
