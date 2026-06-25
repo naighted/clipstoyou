@@ -207,7 +207,7 @@ app.post('/crear-checkout', async (req, res) => {
       }],
       customer_email: req.user.email,
       metadata: { usuario_id: req.user.id, plan: planType },
-      success_url: `${BASE}/?pago=ok`,
+      success_url: `${BASE}/?pago=ok&plan=${planType}`,
       cancel_url: `${BASE}/?pago=cancelado`,
     });
     res.json({ url: session.url });

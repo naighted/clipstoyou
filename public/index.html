@@ -1950,12 +1950,25 @@
     // Mostrar mensaje si vuelve de pago
     const params = new URLSearchParams(window.location.search);
     if (params.get('pago') === 'ok') {
-      setTimeout(() => cargarUsuario(), 1000);
+      setTimeout(() => cargarUsuario(), 1500);
+      const planParam = params.get('plan');
+      const planNombre = planParam === 'promax' ? 'Pro Max' : 'Pro';
+      const es = idioma === 'es';
       const msg = document.createElement('div');
-      msg.style = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1a2e1a;border:1px solid #6fcf97;color:#6fcf97;padding:14px 24px;border-radius:12px;z-index:999;font-size:0.9rem;';
-      msg.textContent = '✅ ¡Suscripción Pro activada! Gracias.';
+      msg.style = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#1a2e1a;border:1px solid #6fcf97;color:#6fcf97;padding:16px 28px;border-radius:14px;z-index:999;font-size:0.92rem;font-weight:600;box-shadow:0 4px 24px rgba(0,0,0,0.4);text-align:center;';
+      msg.innerHTML = es
+        ? `✅ ¡Suscripción <strong>${planNombre}</strong> activada! Gracias por apoyar ClipsToYou.`
+        : `✅ <strong>${planNombre}</strong> subscription activated! Thanks for supporting ClipsToYou.`;
+      document.body.appendChild(msg);
+      setTimeout(() => msg.remove(), 6000);
+      history.replaceState({}, '', '/');
+    } else if (params.get('pago') === 'cancelado') {
+      const msg = document.createElement('div');
+      msg.style = 'position:fixed;top:80px;left:50%;transform:translateX(-50%);background:#2e1a1a;border:1px solid #cf6f6f;color:#cf6f6f;padding:16px 28px;border-radius:14px;z-index:999;font-size:0.92rem;font-weight:600;box-shadow:0 4px 24px rgba(0,0,0,0.4);';
+      msg.textContent = idioma === 'es' ? '❌ Pago cancelado. Puedes intentarlo de nuevo cuando quieras.' : '❌ Payment cancelled. You can try again anytime.';
       document.body.appendChild(msg);
       setTimeout(() => msg.remove(), 5000);
+      history.replaceState({}, '', '/');
     }
   </script>
 
