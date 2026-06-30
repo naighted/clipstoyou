@@ -1098,7 +1098,7 @@
         camInstruccion: '📌 Dibuja un rectángulo sobre <strong style="color:#fff">tu cámara/webcam</strong>. El gameplay se detecta automáticamente.',
         camPresets: 'O elige una posición predefinida:', presetBL: '↙ Abajo izq', presetBR: '↘ Abajo der', presetTL: '↖ Arriba izq', presetTR: '↗ Arriba der',
         camPosLabel: '¿Dónde va tu cámara en el resultado?', btnCamAbajo: '⬇️ Cam ABAJO (recomendado)', btnCamArriba: '⬆️ Cam ARRIBA',
-        gameplayInstruccion: '🎮 Arrastra el recuadro verde para elegir qué parte del gameplay se ve en el resultado.',
+        gameplayInstruccion: '🎮 Arrastra o redimensiona (esquinas) el recuadro verde para elegir qué parte del gameplay se ve. Puede solapar con la cámara.',
         sinCamDesc: '🔍 El video se ampliará automáticamente para rellenar el formato vertical 9:16. Perfecto para podcasts, clips de YouTube o cualquier video sin cámara.',
         sinCamCropInstruccion: '🖱️ Arrastra el recuadro verde para elegir qué parte del video se ve en el resultado vertical.',
         btnConvertir916: 'Convertir a 9:16', noClose: 'No cierres la página mientras se procesa',
@@ -1137,7 +1137,7 @@
         camInstruccion: '📌 Draw a rectangle over <strong style="color:#fff">your camera/webcam</strong>. Gameplay is detected automatically.',
         camPresets: 'Or choose a preset position:', presetBL: '↙ Bottom left', presetBR: '↘ Bottom right', presetTL: '↖ Top left', presetTR: '↗ Top right',
         camPosLabel: 'Where should your camera appear?', btnCamAbajo: '⬇️ Cam BOTTOM (recommended)', btnCamArriba: '⬆️ Cam TOP',
-        gameplayInstruccion: '🎮 Drag the green box to choose what part of the gameplay shows in the result.',
+        gameplayInstruccion: '🎮 Drag or resize (corners) the green box to choose what part of the gameplay shows. It can overlap the camera.',
         sinCamDesc: '🔍 The video will be automatically zoomed to fill the vertical 9:16 format. Perfect for podcasts, YouTube clips or any video without a camera.',
         sinCamCropInstruccion: '🖱️ Drag the green box to choose what part of the video shows in the vertical result.',
         btnConvertir916: 'Convert to 9:16', noClose: 'Don\'t close the page while processing',
@@ -1525,8 +1525,8 @@
     // Ventanas de recorte arrastrables (gameplay en con-cam, crop en sin-cam)
     let candidatoGameplay = null;
     let ventanaGameplay = null;
-    let ventanaGameplayBounds = null;
     let isMoveGameplay = false, moveGPOffsetX = 0, moveGPOffsetY = 0;
+    let isResizeGameplay = false, resizeGPCorner = null;
     let ventanaSinCam = null;
     let ventanaSinCamBounds = null;
 
@@ -1545,8 +1545,12 @@
       };
     }
 
+    let gameplayTocado = false;
+    const ASPECT_GAMEPLAY = 1080 / 960;
+
     function recalcularGameplay() {
-      if (!zonaCam || !videoNativeW || !videoNativeH) { ventanaGameplay = null; candidatoGameplay = null; return; }
+      if (!zonaCam || !videoNativeW || !videoNativeH) { ventanaGameplay = null; candidatoGameplay = null; gameplayTocado = false; return; }
+      if (gameplayTocado && ventanaGameplay) return; // el usuario ya lo movió/redimensionó a su gusto, no lo pisamos
       const { x: cx, y: cy, w: cw, h: ch } = zonaCam;
       const W = videoNativeW, H = videoNativeH;
       const candidatos = [
@@ -1560,7 +1564,30 @@
         : { x: 0, y: 0, w: W, h: H };
       const v = calcVentana(candidatoGameplay.x, candidatoGameplay.y, candidatoGameplay.w, candidatoGameplay.h, 1080, 960);
       ventanaGameplay = { x: v.x, y: v.y, w: v.w, h: v.h };
-      ventanaGameplayBounds = { boundsX: v.boundsX, boundsY: v.boundsY };
+    }
+
+    // Redimensiona la ventana de gameplay manteniendo el aspect ratio 1080:960, anclada a la esquina opuesta
+    function applyResizeGameplay(corner, x, y) {
+      if (!ventanaGameplay) return;
+      const W = videoNativeW, H = videoNativeH;
+      const z = ventanaGameplay;
+      let anchorX, anchorY;
+      if (corner === 'tl') { anchorX = z.x + z.w; anchorY = z.y + z.h; }
+      else if (corner === 'tr') { anchorX = z.x;       anchorY = z.y + z.h; }
+      else if (corner === 'bl') { anchorX = z.x + z.w; anchorY = z.y;       }
+      else { anchorX = z.x; anchorY = z.y; } // br
+
+      let newW = Math.abs(x - anchorX);
+      const maxWFromFrameX = (corner === 'tl' || corner === 'bl') ? anchorX : (W - anchorX);
+      const maxHFromFrameY = (corner === 'tl' || corner === 'tr') ? anchorY : (H - anchorY);
+      const maxW = Math.min(maxWFromFrameX, maxHFromFrameY * ASPECT_GAMEPLAY, W);
+      newW = Math.max(60, Math.min(newW, maxW));
+      const newH = newW / ASPECT_GAMEPLAY;
+
+      const newX = (corner === 'tl' || corner === 'bl') ? anchorX - newW : anchorX;
+      const newY = (corner === 'tl' || corner === 'tr') ? anchorY - newH : anchorY;
+
+      ventanaGameplay = { x: newX, y: newY, w: newW, h: newH };
     }
 
     function dibujarRectMovible(ctx, zona, color, label) {
@@ -1601,6 +1628,7 @@
       ventanaGameplay = null;
       candidatoGameplay = null;
       ventanaSinCam = null;
+      gameplayTocado = false;
       document.getElementById('conCamNombreArchivo').textContent = '—';
       document.getElementById('sinCamNombreArchivo').textContent = '—';
       document.getElementById('editor916').style.display = 'none';
@@ -1734,6 +1762,7 @@
         zonaCam = null;
         ventanaGameplay = null;
         candidatoGameplay = null;
+        gameplayTocado = false;
         actualizarBadges916();
         document.getElementById('gameplayInstruccionTxt').style.display = 'none';
         zonaSubida916.style.display = 'none';
@@ -1825,8 +1854,8 @@
 
     function redibujarConCam() {
       ctx916.putImageData(frameImgData, 0, 0);
+      if (ventanaGameplay) dibujarRect(ventanaGameplay, '#22c55e', '🎮 Gameplay');
       if (zonaCam) dibujarRect(zonaCam, '#7c6fff', '🎥 CAM');
-      if (ventanaGameplay) dibujarRectMovible(ctx916, ventanaGameplay, '#22c55e', '🎮 Gameplay');
     }
 
     // Canvas interaction — draw / move / resize
@@ -1871,9 +1900,25 @@
              y >= ventanaGameplay.y && y <= ventanaGameplay.y + ventanaGameplay.h;
     }
 
+    function nearCornerGameplay(x, y) {
+      if (!ventanaGameplay) return null;
+      const hr = handleRadius();
+      const z = ventanaGameplay;
+      const corners = {
+        tl: [z.x, z.y], tr: [z.x + z.w, z.y],
+        bl: [z.x, z.y + z.h], br: [z.x + z.w, z.y + z.h]
+      };
+      for (const [key, [cx, cy]] of Object.entries(corners)) {
+        if (Math.abs(x - cx) <= hr && Math.abs(y - cy) <= hr) return key;
+      }
+      return null;
+    }
+
+    // El usuario puede mover la ventana de gameplay libremente por todo el frame, incluso solapando la cámara
     function moverGameplay(x, y) {
-      const nx = Math.max(ventanaGameplayBounds.boundsX[0], Math.min(x - moveGPOffsetX, ventanaGameplayBounds.boundsX[1]));
-      const ny = Math.max(ventanaGameplayBounds.boundsY[0], Math.min(y - moveGPOffsetY, ventanaGameplayBounds.boundsY[1]));
+      const W = videoNativeW, H = videoNativeH;
+      const nx = Math.max(0, Math.min(x - moveGPOffsetX, W - ventanaGameplay.w));
+      const ny = Math.max(0, Math.min(y - moveGPOffsetY, H - ventanaGameplay.h));
       ventanaGameplay = { ...ventanaGameplay, x: nx, y: ny };
       redibujarConCam();
     }
@@ -1901,6 +1946,12 @@
       if (c === 'tl' || c === 'br') return 'nwse-resize';
       if (c === 'tr' || c === 'bl') return 'nesw-resize';
       if (insideZona(x, y)) return 'grab';
+      if (modo916 === 'con-cam') {
+        const cg = nearCornerGameplay(x, y);
+        if (cg === 'tl' || cg === 'br') return 'nwse-resize';
+        if (cg === 'tr' || cg === 'bl') return 'nesw-resize';
+        if (insideGameplay(x, y)) return 'grab';
+      }
       return 'crosshair';
     }
 
@@ -1908,20 +1959,25 @@
     canvasFrame.addEventListener('mousedown', e => {
       const { x, y } = canvasCoords(e.clientX, e.clientY);
       const corner = nearCorner(x, y);
+      const cornerGP = modo916 === 'con-cam' ? nearCornerGameplay(x, y) : null;
       if (corner) {
-        isResizeMode = true; isMoveMode = false; isDrawing = false; isMoveGameplay = false;
+        isResizeMode = true; isMoveMode = false; isDrawing = false; isMoveGameplay = false; isResizeGameplay = false;
         resizeCorner = corner;
         canvasFrame.style.cursor = cursorForPos(x, y);
       } else if (insideZona(x, y)) {
-        isMoveMode = true; isResizeMode = false; isDrawing = false; isMoveGameplay = false;
+        isMoveMode = true; isResizeMode = false; isDrawing = false; isMoveGameplay = false; isResizeGameplay = false;
         moveOffsetX = x - zonaCam.x; moveOffsetY = y - zonaCam.y;
         canvasFrame.style.cursor = 'grabbing';
+      } else if (cornerGP) {
+        isResizeGameplay = true; isMoveGameplay = false; isMoveMode = false; isResizeMode = false; isDrawing = false;
+        resizeGPCorner = cornerGP; gameplayTocado = true;
+        canvasFrame.style.cursor = cursorForPos(x, y);
       } else if (modo916 === 'con-cam' && insideGameplay(x, y)) {
-        isMoveGameplay = true; isMoveMode = false; isResizeMode = false; isDrawing = false;
-        moveGPOffsetX = x - ventanaGameplay.x; moveGPOffsetY = y - ventanaGameplay.y;
+        isMoveGameplay = true; isMoveMode = false; isResizeMode = false; isDrawing = false; isResizeGameplay = false;
+        moveGPOffsetX = x - ventanaGameplay.x; moveGPOffsetY = y - ventanaGameplay.y; gameplayTocado = true;
         canvasFrame.style.cursor = 'grabbing';
       } else {
-        isDrawing = true; isMoveMode = false; isResizeMode = false; isMoveGameplay = false;
+        isDrawing = true; isMoveMode = false; isResizeMode = false; isMoveGameplay = false; isResizeGameplay = false;
         startX = x; startY = y;
       }
     });
@@ -1936,19 +1992,23 @@
         zonaCam = clampZona({ x: x - moveOffsetX, y: y - moveOffsetY, w: zonaCam.w, h: zonaCam.h });
         recalcularGameplay();
         redibujarConCam();
+      } else if (isResizeGameplay && ventanaGameplay) {
+        applyResizeGameplay(resizeGPCorner, x, y);
+        redibujarConCam();
       } else if (isMoveGameplay && ventanaGameplay) {
         moverGameplay(x, y);
       } else if (isDrawing) {
         ctx916.putImageData(frameImgData, 0, 0);
         dibujarRect({ x: Math.min(startX, x), y: Math.min(startY, y), w: Math.abs(x - startX), h: Math.abs(y - startY) }, '#7c6fff', '🎥 CAM');
       } else {
-        canvasFrame.style.cursor = insideGameplay(x, y) ? 'grab' : cursorForPos(x, y);
+        canvasFrame.style.cursor = cursorForPos(x, y);
       }
     });
 
     canvasFrame.addEventListener('mouseup', e => {
       if (isResizeMode) { isResizeMode = false; resizeCorner = null; actualizarBadges916(); return; }
       if (isMoveMode) { isMoveMode = false; canvasFrame.style.cursor = 'grab'; actualizarBadges916(); return; }
+      if (isResizeGameplay) { isResizeGameplay = false; resizeGPCorner = null; canvasFrame.style.cursor = 'grab'; return; }
       if (isMoveGameplay) { isMoveGameplay = false; canvasFrame.style.cursor = 'grab'; return; }
       if (!isDrawing) return;
       isDrawing = false;
@@ -1961,23 +2021,27 @@
       actualizarBadges916();
     });
 
-    canvasFrame.addEventListener('mouseleave', () => { isMoveMode = false; isResizeMode = false; isDrawing = false; isMoveGameplay = false; });
+    canvasFrame.addEventListener('mouseleave', () => { isMoveMode = false; isResizeMode = false; isDrawing = false; isMoveGameplay = false; isResizeGameplay = false; });
 
     // Touch events (resize / move / draw)
     canvasFrame.addEventListener('touchstart', e => {
       e.preventDefault();
       const { x, y } = canvasCoords(e.touches[0].clientX, e.touches[0].clientY);
       const corner = nearCorner(x, y);
+      const cornerGP = modo916 === 'con-cam' ? nearCornerGameplay(x, y) : null;
       if (corner) {
-        isResizeMode = true; isMoveMode = false; isDrawing = false; isMoveGameplay = false; resizeCorner = corner;
+        isResizeMode = true; isMoveMode = false; isDrawing = false; isMoveGameplay = false; isResizeGameplay = false; resizeCorner = corner;
       } else if (insideZona(x, y)) {
-        isMoveMode = true; isResizeMode = false; isDrawing = false; isMoveGameplay = false;
+        isMoveMode = true; isResizeMode = false; isDrawing = false; isMoveGameplay = false; isResizeGameplay = false;
         moveOffsetX = x - zonaCam.x; moveOffsetY = y - zonaCam.y;
+      } else if (cornerGP) {
+        isResizeGameplay = true; isMoveGameplay = false; isMoveMode = false; isResizeMode = false; isDrawing = false;
+        resizeGPCorner = cornerGP; gameplayTocado = true;
       } else if (modo916 === 'con-cam' && insideGameplay(x, y)) {
-        isMoveGameplay = true; isMoveMode = false; isResizeMode = false; isDrawing = false;
-        moveGPOffsetX = x - ventanaGameplay.x; moveGPOffsetY = y - ventanaGameplay.y;
+        isMoveGameplay = true; isMoveMode = false; isResizeMode = false; isDrawing = false; isResizeGameplay = false;
+        moveGPOffsetX = x - ventanaGameplay.x; moveGPOffsetY = y - ventanaGameplay.y; gameplayTocado = true;
       } else {
-        isDrawing = true; isMoveMode = false; isResizeMode = false; isMoveGameplay = false;
+        isDrawing = true; isMoveMode = false; isResizeMode = false; isMoveGameplay = false; isResizeGameplay = false;
         startX = x; startY = y;
       }
     }, { passive: false });
@@ -1993,6 +2057,9 @@
         zonaCam = clampZona({ x: x - moveOffsetX, y: y - moveOffsetY, w: zonaCam.w, h: zonaCam.h });
         recalcularGameplay();
         redibujarConCam();
+      } else if (isResizeGameplay && ventanaGameplay) {
+        applyResizeGameplay(resizeGPCorner, x, y);
+        redibujarConCam();
       } else if (isMoveGameplay && ventanaGameplay) {
         moverGameplay(x, y);
       } else if (isDrawing) {
@@ -2005,6 +2072,7 @@
       e.preventDefault();
       if (isResizeMode) { isResizeMode = false; resizeCorner = null; actualizarBadges916(); return; }
       if (isMoveMode) { isMoveMode = false; actualizarBadges916(); return; }
+      if (isResizeGameplay) { isResizeGameplay = false; resizeGPCorner = null; return; }
       if (isMoveGameplay) { isMoveGameplay = false; return; }
       if (!isDrawing) return;
       isDrawing = false;
