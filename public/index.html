@@ -1100,7 +1100,7 @@
         camPosLabel: '¿Dónde va tu cámara en el resultado?', btnCamAbajo: '⬇️ Cam ABAJO (recomendado)', btnCamArriba: '⬆️ Cam ARRIBA',
         gameplayInstruccion: '🎮 Arrastra o redimensiona (esquinas) el recuadro verde para elegir qué parte del gameplay se ve. Puede solapar con la cámara.',
         sinCamDesc: '🔍 El video se ampliará automáticamente para rellenar el formato vertical 9:16. Perfecto para podcasts, clips de YouTube o cualquier video sin cámara.',
-        sinCamCropInstruccion: '🖱️ Arrastra el recuadro verde para elegir qué parte del video se ve en el resultado vertical.',
+        sinCamCropInstruccion: '🖱️ Arrastra o redimensiona (esquinas) el recuadro verde para elegir qué parte del video se ve en el resultado vertical.',
         btnConvertir916: 'Convertir a 9:16', noClose: 'No cierres la página mientras se procesa',
         videoConvertido: '✅ ¡Video convertido!', btnDescargar916: '⬇️ Descargar 9:16', btnDividirPartes: '✂️ Dividir en partes', btnConvertirOtro: '🔄 Convertir otro', btnSugerir: 'Sugerir',
       },
@@ -1139,7 +1139,7 @@
         camPosLabel: 'Where should your camera appear?', btnCamAbajo: '⬇️ Cam BOTTOM (recommended)', btnCamArriba: '⬆️ Cam TOP',
         gameplayInstruccion: '🎮 Drag or resize (corners) the green box to choose what part of the gameplay shows. It can overlap the camera.',
         sinCamDesc: '🔍 The video will be automatically zoomed to fill the vertical 9:16 format. Perfect for podcasts, YouTube clips or any video without a camera.',
-        sinCamCropInstruccion: '🖱️ Drag the green box to choose what part of the video shows in the vertical result.',
+        sinCamCropInstruccion: '🖱️ Drag or resize (corners) the green box to choose what part of the video shows in the vertical result.',
         btnConvertir916: 'Convert to 9:16', noClose: 'Don\'t close the page while processing',
         videoConvertido: '✅ Video converted!', btnDescargar916: '⬇️ Download 9:16', btnDividirPartes: '✂️ Split into parts', btnConvertirOtro: '🔄 Convert another', btnSugerir: 'Suggest',
       }
@@ -1528,7 +1528,6 @@
     let isMoveGameplay = false, moveGPOffsetX = 0, moveGPOffsetY = 0;
     let isResizeGameplay = false, resizeGPCorner = null;
     let ventanaSinCam = null;
-    let ventanaSinCamBounds = null;
 
     function calcVentana(srcX, srcY, srcW, srcH, targetW, targetH) {
       const targetAspect = targetW / targetH;
@@ -1601,6 +1600,19 @@
       ctx.fillStyle = color;
       ctx.font = `bold ${Math.max(15, refW * 0.018)}px sans-serif`;
       ctx.fillText(label, zona.x + 6, zona.y + Math.max(20, refW * 0.022));
+      // Manijas de redimensión en las 4 esquinas
+      const hs = Math.max(12, refW * 0.012);
+      const corners = [
+        [zona.x, zona.y], [zona.x + zona.w, zona.y],
+        [zona.x, zona.y + zona.h], [zona.x + zona.w, zona.y + zona.h]
+      ];
+      corners.forEach(([cx, cy]) => {
+        ctx.fillStyle = '#fff';
+        ctx.fillRect(cx - hs/2, cy - hs/2, hs, hs);
+        ctx.strokeStyle = color;
+        ctx.lineWidth = Math.max(2, refW * 0.002);
+        ctx.strokeRect(cx - hs/2, cy - hs/2, hs, hs);
+      });
     }
 
     function setModo916(m) {
@@ -1648,11 +1660,26 @@
     const canvasFrameSinCam = document.getElementById('canvasFrameSinCam');
     const ctxSinCam = canvasFrameSinCam.getContext('2d');
 
-    function setupDragSimple(canvas, ctx, getImgData, getZona, setZona, getBounds, color, label) {
-      let dragging = false, offX = 0, offY = 0;
+    function setupDragResize(canvas, ctx, getImgData, getZona, setZona, aspect, color, label) {
+      let dragging = false, resizing = false, corner = null, offX = 0, offY = 0;
       function coords(clientX, clientY) {
         const r = canvas.getBoundingClientRect();
         return { x: (clientX - r.left) * (canvas.width / r.width), y: (clientY - r.top) * (canvas.height / r.height) };
+      }
+      function hr() { return Math.max(14, canvas.width * 0.014); }
+      function nearCorner(x, y) {
+        const z = getZona();
+        if (!z) return null;
+        const corners = { tl: [z.x, z.y], tr: [z.x + z.w, z.y], bl: [z.x, z.y + z.h], br: [z.x + z.w, z.y + z.h] };
+        for (const [key, [cx, cy]] of Object.entries(corners)) {
+          if (Math.abs(x - cx) <= hr() && Math.abs(y - cy) <= hr()) return key;
+        }
+        return null;
+      }
+      function cursorFor(c, x, y) {
+        if (c === 'tl' || c === 'br') return 'nwse-resize';
+        if (c === 'tr' || c === 'bl') return 'nesw-resize';
+        return inside(x, y) ? 'grab' : 'default';
       }
       function inside(x, y) {
         const z = getZona();
@@ -1666,44 +1693,68 @@
         if (z) dibujarRectMovible(ctx, z, color, label);
       }
       function mover(x, y) {
-        const b = getBounds();
         const z = getZona();
-        const nx = Math.max(b.boundsX[0], Math.min(x - offX, b.boundsX[1]));
-        const ny = Math.max(b.boundsY[0], Math.min(y - offY, b.boundsY[1]));
+        const W = canvas.width, H = canvas.height;
+        const nx = Math.max(0, Math.min(x - offX, W - z.w));
+        const ny = Math.max(0, Math.min(y - offY, H - z.h));
         setZona({ ...z, x: nx, y: ny });
+        redraw();
+      }
+      function resize(x, y) {
+        const z = getZona();
+        const W = canvas.width, H = canvas.height;
+        let anchorX, anchorY;
+        if (corner === 'tl') { anchorX = z.x + z.w; anchorY = z.y + z.h; }
+        else if (corner === 'tr') { anchorX = z.x;       anchorY = z.y + z.h; }
+        else if (corner === 'bl') { anchorX = z.x + z.w; anchorY = z.y;       }
+        else { anchorX = z.x; anchorY = z.y; } // br
+        let newW = Math.abs(x - anchorX);
+        const maxWFromX = (corner === 'tl' || corner === 'bl') ? anchorX : (W - anchorX);
+        const maxHFromY = (corner === 'tl' || corner === 'tr') ? anchorY : (H - anchorY);
+        const maxW = Math.min(maxWFromX, maxHFromY * aspect, W);
+        newW = Math.max(40, Math.min(newW, maxW));
+        const newH = newW / aspect;
+        const newX = (corner === 'tl' || corner === 'bl') ? anchorX - newW : anchorX;
+        const newY = (corner === 'tl' || corner === 'tr') ? anchorY - newH : anchorY;
+        setZona({ x: newX, y: newY, w: newW, h: newH });
         redraw();
       }
       canvas.addEventListener('mousedown', e => {
         const { x, y } = coords(e.clientX, e.clientY);
-        if (inside(x, y)) { dragging = true; const z = getZona(); offX = x - z.x; offY = y - z.y; canvas.style.cursor = 'grabbing'; }
+        const c = nearCorner(x, y);
+        if (c) { resizing = true; corner = c; canvas.style.cursor = cursorFor(c, x, y); }
+        else if (inside(x, y)) { dragging = true; const z = getZona(); offX = x - z.x; offY = y - z.y; canvas.style.cursor = 'grabbing'; }
       });
       canvas.addEventListener('mousemove', e => {
         const { x, y } = coords(e.clientX, e.clientY);
-        if (dragging) mover(x, y);
-        else canvas.style.cursor = inside(x, y) ? 'grab' : 'default';
+        if (resizing) resize(x, y);
+        else if (dragging) mover(x, y);
+        else canvas.style.cursor = cursorFor(nearCorner(x, y), x, y);
       });
-      canvas.addEventListener('mouseup', () => { dragging = false; canvas.style.cursor = 'grab'; });
-      canvas.addEventListener('mouseleave', () => { dragging = false; });
+      canvas.addEventListener('mouseup', () => { dragging = false; resizing = false; corner = null; canvas.style.cursor = 'grab'; });
+      canvas.addEventListener('mouseleave', () => { dragging = false; resizing = false; corner = null; });
       canvas.addEventListener('touchstart', e => {
         const t = e.touches[0]; const { x, y } = coords(t.clientX, t.clientY);
-        if (inside(x, y)) { e.preventDefault(); dragging = true; const z = getZona(); offX = x - z.x; offY = y - z.y; }
+        const c = nearCorner(x, y);
+        if (c) { e.preventDefault(); resizing = true; corner = c; }
+        else if (inside(x, y)) { e.preventDefault(); dragging = true; const z = getZona(); offX = x - z.x; offY = y - z.y; }
       }, { passive: false });
       canvas.addEventListener('touchmove', e => {
-        if (!dragging) return;
+        if (!dragging && !resizing) return;
         e.preventDefault();
         const t = e.touches[0]; const { x, y } = coords(t.clientX, t.clientY);
-        mover(x, y);
+        if (resizing) resize(x, y); else mover(x, y);
       }, { passive: false });
-      canvas.addEventListener('touchend', () => { dragging = false; });
+      canvas.addEventListener('touchend', () => { dragging = false; resizing = false; corner = null; });
       return { redraw };
     }
 
-    const dragSinCam = setupDragSimple(
+    const dragSinCam = setupDragResize(
       canvasFrameSinCam, ctxSinCam,
       () => frameImgData,
       () => ventanaSinCam,
       z => { ventanaSinCam = z; },
-      () => ventanaSinCamBounds,
+      1080 / 1920,
       '#22c55e', '📐 Visible'
     );
 
@@ -1775,7 +1826,6 @@
         ctxSinCam.putImageData(frameImgData, 0, 0);
         const v = calcVentana(0, 0, videoNativeW, videoNativeH, 1080, 1920);
         ventanaSinCam = { x: v.x, y: v.y, w: v.w, h: v.h };
-        ventanaSinCamBounds = { boundsX: v.boundsX, boundsY: v.boundsY };
         dragSinCam.redraw();
 
         if (modo916 === 'sin-cam') {
