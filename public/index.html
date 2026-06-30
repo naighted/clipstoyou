@@ -680,7 +680,7 @@
       background: #111;
       cursor: crosshair;
     }
-    #canvasFrame { display: block; width: 100%; height: auto; }
+    #canvasFrame, #canvasFrameSinCam { display: block; width: 100%; height: auto; }
     .sel-btns {
       display: flex;
       gap: 8px;
@@ -926,6 +926,7 @@
             <div class="sel-info">
               <span class="sel-badge arriba" id="badgeCam" style="background:rgba(124,111,255,0.15);color:#7c6fff">🎥 Cam: sin seleccionar</span>
             </div>
+            <p id="gameplayInstruccionTxt" data-i18n="gameplayInstruccion" style="font-size:0.75rem;color:#555;margin:6px 0 10px;display:none;">🎮 Arrastra el recuadro verde para elegir qué parte del gameplay se ve en el resultado.</p>
 
             <p style="font-size:0.8rem;color:var(--gris);margin-bottom:8px;" data-i18n="camPosLabel">¿Dónde va tu cámara en el resultado?</p>
             <div class="sel-btns" style="margin-bottom:14px;">
@@ -943,7 +944,12 @@
               <span id="sinCamNombreArchivo" style="font-size:0.82rem;color:#ccc;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</span>
               <button onclick="resetConvertir916()" data-i18n="cambiar" style="background:none;border:1px solid #333;color:#888;padding:3px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;">Cambiar</button>
             </div>
-            <p style="font-size:0.82rem;color:var(--gris);margin-bottom:14px;" data-i18n="sinCamDesc">🔍 El video se ampliará automáticamente para rellenar el formato vertical 9:16. Perfecto para podcasts, clips de YouTube o cualquier video sin cámara.</p>
+            <p style="font-size:0.82rem;color:var(--gris);margin-bottom:10px;" data-i18n="sinCamDesc">🔍 El video se ampliará automáticamente para rellenar el formato vertical 9:16. Perfecto para podcasts, clips de YouTube o cualquier video sin cámara.</p>
+            <p data-i18n="sinCamCropInstruccion" style="font-size:0.75rem;color:#555;margin-bottom:8px;">🖱️ Arrastra el recuadro verde para elegir qué parte del video se ve en el resultado vertical.</p>
+            <div class="canvas-wrap" id="canvasWrapSinCam">
+              <canvas id="canvasFrameSinCam"></canvas>
+            </div>
+            <div style="height:12px;"></div>
             <button class="btn-principal" id="btnConvertirSinCam" onclick="convertir916()" data-i18n="btnConvertir916" style="opacity:0.4;cursor:not-allowed;">Convertir a 9:16</button>
           </div>
 
@@ -1092,7 +1098,9 @@
         camInstruccion: '📌 Dibuja un rectángulo sobre <strong style="color:#fff">tu cámara/webcam</strong>. El gameplay se detecta automáticamente.',
         camPresets: 'O elige una posición predefinida:', presetBL: '↙ Abajo izq', presetBR: '↘ Abajo der', presetTL: '↖ Arriba izq', presetTR: '↗ Arriba der',
         camPosLabel: '¿Dónde va tu cámara en el resultado?', btnCamAbajo: '⬇️ Cam ABAJO (recomendado)', btnCamArriba: '⬆️ Cam ARRIBA',
+        gameplayInstruccion: '🎮 Arrastra el recuadro verde para elegir qué parte del gameplay se ve en el resultado.',
         sinCamDesc: '🔍 El video se ampliará automáticamente para rellenar el formato vertical 9:16. Perfecto para podcasts, clips de YouTube o cualquier video sin cámara.',
+        sinCamCropInstruccion: '🖱️ Arrastra el recuadro verde para elegir qué parte del video se ve en el resultado vertical.',
         btnConvertir916: 'Convertir a 9:16', noClose: 'No cierres la página mientras se procesa',
         videoConvertido: '✅ ¡Video convertido!', btnDescargar916: '⬇️ Descargar 9:16', btnDividirPartes: '✂️ Dividir en partes', btnConvertirOtro: '🔄 Convertir otro', btnSugerir: 'Sugerir',
       },
@@ -1129,7 +1137,9 @@
         camInstruccion: '📌 Draw a rectangle over <strong style="color:#fff">your camera/webcam</strong>. Gameplay is detected automatically.',
         camPresets: 'Or choose a preset position:', presetBL: '↙ Bottom left', presetBR: '↘ Bottom right', presetTL: '↖ Top left', presetTR: '↗ Top right',
         camPosLabel: 'Where should your camera appear?', btnCamAbajo: '⬇️ Cam BOTTOM (recommended)', btnCamArriba: '⬆️ Cam TOP',
+        gameplayInstruccion: '🎮 Drag the green box to choose what part of the gameplay shows in the result.',
         sinCamDesc: '🔍 The video will be automatically zoomed to fill the vertical 9:16 format. Perfect for podcasts, YouTube clips or any video without a camera.',
+        sinCamCropInstruccion: '🖱️ Drag the green box to choose what part of the video shows in the vertical result.',
         btnConvertir916: 'Convert to 9:16', noClose: 'Don\'t close the page while processing',
         videoConvertido: '✅ Video converted!', btnDescargar916: '⬇️ Download 9:16', btnDividirPartes: '✂️ Split into parts', btnConvertirOtro: '🔄 Convert another', btnSugerir: 'Suggest',
       }
@@ -1512,6 +1522,60 @@
     let videoNativeW = 1, videoNativeH = 1;
     let blob916 = null;
 
+    // Ventanas de recorte arrastrables (gameplay en con-cam, crop en sin-cam)
+    let candidatoGameplay = null;
+    let ventanaGameplay = null;
+    let ventanaGameplayBounds = null;
+    let isMoveGameplay = false, moveGPOffsetX = 0, moveGPOffsetY = 0;
+    let ventanaSinCam = null;
+    let ventanaSinCamBounds = null;
+
+    function calcVentana(srcX, srcY, srcW, srcH, targetW, targetH) {
+      const targetAspect = targetW / targetH;
+      const srcAspect = srcW / srcH;
+      let w, h;
+      if (srcAspect > targetAspect) { h = srcH; w = srcH * targetAspect; }
+      else { w = srcW; h = srcW / targetAspect; }
+      const x = srcX + (srcW - w) / 2;
+      const y = srcY + (srcH - h) / 2;
+      return {
+        x, y, w, h,
+        boundsX: [srcX, srcX + srcW - w],
+        boundsY: [srcY, srcY + srcH - h]
+      };
+    }
+
+    function recalcularGameplay() {
+      if (!zonaCam || !videoNativeW || !videoNativeH) { ventanaGameplay = null; candidatoGameplay = null; return; }
+      const { x: cx, y: cy, w: cw, h: ch } = zonaCam;
+      const W = videoNativeW, H = videoNativeH;
+      const candidatos = [
+        { x: 0,     y: 0,      w: W,        h: cy           },
+        { x: 0,     y: cy+ch,  w: W,        h: H-cy-ch      },
+        { x: 0,     y: 0,      w: cx,       h: H            },
+        { x: cx+cw, y: 0,      w: W-cx-cw,  h: H            },
+      ].filter(r => r.w > W * 0.15 && r.h > H * 0.15);
+      candidatoGameplay = candidatos.length
+        ? candidatos.reduce((a, b) => (a.w * a.h >= b.w * b.h ? a : b))
+        : { x: 0, y: 0, w: W, h: H };
+      const v = calcVentana(candidatoGameplay.x, candidatoGameplay.y, candidatoGameplay.w, candidatoGameplay.h, 1080, 960);
+      ventanaGameplay = { x: v.x, y: v.y, w: v.w, h: v.h };
+      ventanaGameplayBounds = { boundsX: v.boundsX, boundsY: v.boundsY };
+    }
+
+    function dibujarRectMovible(ctx, zona, color, label) {
+      if (!zona) return;
+      const refW = ctx.canvas.width;
+      ctx.strokeStyle = color;
+      ctx.lineWidth = Math.max(3, refW * 0.003);
+      ctx.strokeRect(zona.x, zona.y, zona.w, zona.h);
+      ctx.fillStyle = color + '22';
+      ctx.fillRect(zona.x, zona.y, zona.w, zona.h);
+      ctx.fillStyle = color;
+      ctx.font = `bold ${Math.max(15, refW * 0.018)}px sans-serif`;
+      ctx.fillText(label, zona.x + 6, zona.y + Math.max(20, refW * 0.022));
+    }
+
     function setModo916(m) {
       modo916 = m;
       document.getElementById('btnModoCam').classList.toggle('activo', m === 'con-cam');
@@ -1534,6 +1598,9 @@
       zonaCam = null;
       videoFile916 = null;
       blob916 = null;
+      ventanaGameplay = null;
+      candidatoGameplay = null;
+      ventanaSinCam = null;
       document.getElementById('conCamNombreArchivo').textContent = '—';
       document.getElementById('sinCamNombreArchivo').textContent = '—';
       document.getElementById('editor916').style.display = 'none';
@@ -1550,6 +1617,67 @@
     const zonaSubida916 = document.getElementById('zonaSubida916');
     const canvasFrame = document.getElementById('canvasFrame');
     const ctx916 = canvasFrame.getContext('2d');
+    const canvasFrameSinCam = document.getElementById('canvasFrameSinCam');
+    const ctxSinCam = canvasFrameSinCam.getContext('2d');
+
+    function setupDragSimple(canvas, ctx, getImgData, getZona, setZona, getBounds, color, label) {
+      let dragging = false, offX = 0, offY = 0;
+      function coords(clientX, clientY) {
+        const r = canvas.getBoundingClientRect();
+        return { x: (clientX - r.left) * (canvas.width / r.width), y: (clientY - r.top) * (canvas.height / r.height) };
+      }
+      function inside(x, y) {
+        const z = getZona();
+        return z && x >= z.x && x <= z.x + z.w && y >= z.y && y <= z.y + z.h;
+      }
+      function redraw() {
+        const img = getImgData();
+        if (!img) return;
+        ctx.putImageData(img, 0, 0);
+        const z = getZona();
+        if (z) dibujarRectMovible(ctx, z, color, label);
+      }
+      function mover(x, y) {
+        const b = getBounds();
+        const z = getZona();
+        const nx = Math.max(b.boundsX[0], Math.min(x - offX, b.boundsX[1]));
+        const ny = Math.max(b.boundsY[0], Math.min(y - offY, b.boundsY[1]));
+        setZona({ ...z, x: nx, y: ny });
+        redraw();
+      }
+      canvas.addEventListener('mousedown', e => {
+        const { x, y } = coords(e.clientX, e.clientY);
+        if (inside(x, y)) { dragging = true; const z = getZona(); offX = x - z.x; offY = y - z.y; canvas.style.cursor = 'grabbing'; }
+      });
+      canvas.addEventListener('mousemove', e => {
+        const { x, y } = coords(e.clientX, e.clientY);
+        if (dragging) mover(x, y);
+        else canvas.style.cursor = inside(x, y) ? 'grab' : 'default';
+      });
+      canvas.addEventListener('mouseup', () => { dragging = false; canvas.style.cursor = 'grab'; });
+      canvas.addEventListener('mouseleave', () => { dragging = false; });
+      canvas.addEventListener('touchstart', e => {
+        const t = e.touches[0]; const { x, y } = coords(t.clientX, t.clientY);
+        if (inside(x, y)) { e.preventDefault(); dragging = true; const z = getZona(); offX = x - z.x; offY = y - z.y; }
+      }, { passive: false });
+      canvas.addEventListener('touchmove', e => {
+        if (!dragging) return;
+        e.preventDefault();
+        const t = e.touches[0]; const { x, y } = coords(t.clientX, t.clientY);
+        mover(x, y);
+      }, { passive: false });
+      canvas.addEventListener('touchend', () => { dragging = false; });
+      return { redraw };
+    }
+
+    const dragSinCam = setupDragSimple(
+      canvasFrameSinCam, ctxSinCam,
+      () => frameImgData,
+      () => ventanaSinCam,
+      z => { ventanaSinCam = z; },
+      () => ventanaSinCamBounds,
+      '#22c55e', '📐 Visible'
+    );
 
     inputVideo916.addEventListener('change', e => {
       const file = e.target.files[0];
@@ -1604,10 +1732,23 @@
         frameImgData = ctx916.getImageData(0, 0, canvasFrame.width, canvasFrame.height);
         URL.revokeObjectURL(url);
         zonaCam = null;
+        ventanaGameplay = null;
+        candidatoGameplay = null;
         actualizarBadges916();
+        document.getElementById('gameplayInstruccionTxt').style.display = 'none';
         zonaSubida916.style.display = 'none';
         document.getElementById('resultado916').style.display = 'none';
         document.getElementById('errorBox916').style.display = 'none';
+
+        // Configurar canvas sin-cam con ventana de recorte arrastrable
+        canvasFrameSinCam.width = videoNativeW;
+        canvasFrameSinCam.height = videoNativeH;
+        ctxSinCam.putImageData(frameImgData, 0, 0);
+        const v = calcVentana(0, 0, videoNativeW, videoNativeH, 1080, 1920);
+        ventanaSinCam = { x: v.x, y: v.y, w: v.w, h: v.h };
+        ventanaSinCamBounds = { boundsX: v.boundsX, boundsY: v.boundsY };
+        dragSinCam.redraw();
+
         if (modo916 === 'sin-cam') {
           document.getElementById('editor916').style.display = 'none';
           document.getElementById('editorSinCam916').style.display = 'block';
@@ -1636,8 +1777,8 @@
       };
       const p = positions[pos];
       zonaCam = { x: p.x, y: p.y, w: cw, h: ch };
-      ctx916.putImageData(frameImgData, 0, 0);
-      dibujarRect(zonaCam, '#7c6fff', '🎥 CAM');
+      recalcularGameplay();
+      redibujarConCam();
       actualizarBadges916();
     }
 
@@ -1679,6 +1820,13 @@
       const btnC = document.getElementById('btnConvertir916');
       btnC.style.opacity = zonaCam ? '1' : '0.4';
       btnC.style.cursor = zonaCam ? 'pointer' : 'not-allowed';
+      document.getElementById('gameplayInstruccionTxt').style.display = zonaCam ? 'block' : 'none';
+    }
+
+    function redibujarConCam() {
+      ctx916.putImageData(frameImgData, 0, 0);
+      if (zonaCam) dibujarRect(zonaCam, '#7c6fff', '🎥 CAM');
+      if (ventanaGameplay) dibujarRectMovible(ctx916, ventanaGameplay, '#22c55e', '🎮 Gameplay');
     }
 
     // Canvas interaction — draw / move / resize
@@ -1717,6 +1865,19 @@
              y >= zonaCam.y && y <= zonaCam.y + zonaCam.h;
     }
 
+    function insideGameplay(x, y) {
+      if (!ventanaGameplay) return false;
+      return x >= ventanaGameplay.x && x <= ventanaGameplay.x + ventanaGameplay.w &&
+             y >= ventanaGameplay.y && y <= ventanaGameplay.y + ventanaGameplay.h;
+    }
+
+    function moverGameplay(x, y) {
+      const nx = Math.max(ventanaGameplayBounds.boundsX[0], Math.min(x - moveGPOffsetX, ventanaGameplayBounds.boundsX[1]));
+      const ny = Math.max(ventanaGameplayBounds.boundsY[0], Math.min(y - moveGPOffsetY, ventanaGameplayBounds.boundsY[1]));
+      ventanaGameplay = { ...ventanaGameplay, x: nx, y: ny };
+      redibujarConCam();
+    }
+
     function clampZona(z) {
       const x = Math.max(0, Math.min(z.x, canvasFrame.width - Math.max(z.w, 20)));
       const y = Math.max(0, Math.min(z.y, canvasFrame.height - Math.max(z.h, 20)));
@@ -1748,15 +1909,19 @@
       const { x, y } = canvasCoords(e.clientX, e.clientY);
       const corner = nearCorner(x, y);
       if (corner) {
-        isResizeMode = true; isMoveMode = false; isDrawing = false;
+        isResizeMode = true; isMoveMode = false; isDrawing = false; isMoveGameplay = false;
         resizeCorner = corner;
         canvasFrame.style.cursor = cursorForPos(x, y);
       } else if (insideZona(x, y)) {
-        isMoveMode = true; isResizeMode = false; isDrawing = false;
+        isMoveMode = true; isResizeMode = false; isDrawing = false; isMoveGameplay = false;
         moveOffsetX = x - zonaCam.x; moveOffsetY = y - zonaCam.y;
         canvasFrame.style.cursor = 'grabbing';
+      } else if (modo916 === 'con-cam' && insideGameplay(x, y)) {
+        isMoveGameplay = true; isMoveMode = false; isResizeMode = false; isDrawing = false;
+        moveGPOffsetX = x - ventanaGameplay.x; moveGPOffsetY = y - ventanaGameplay.y;
+        canvasFrame.style.cursor = 'grabbing';
       } else {
-        isDrawing = true; isMoveMode = false; isResizeMode = false;
+        isDrawing = true; isMoveMode = false; isResizeMode = false; isMoveGameplay = false;
         startX = x; startY = y;
       }
     });
@@ -1765,35 +1930,38 @@
       const { x, y } = canvasCoords(e.clientX, e.clientY);
       if (isResizeMode) {
         applyResize(x, y);
-        ctx916.putImageData(frameImgData, 0, 0);
-        dibujarRect(zonaCam, '#7c6fff', '🎥 CAM');
+        recalcularGameplay();
+        redibujarConCam();
       } else if (isMoveMode && zonaCam) {
         zonaCam = clampZona({ x: x - moveOffsetX, y: y - moveOffsetY, w: zonaCam.w, h: zonaCam.h });
-        ctx916.putImageData(frameImgData, 0, 0);
-        dibujarRect(zonaCam, '#7c6fff', '🎥 CAM');
+        recalcularGameplay();
+        redibujarConCam();
+      } else if (isMoveGameplay && ventanaGameplay) {
+        moverGameplay(x, y);
       } else if (isDrawing) {
         ctx916.putImageData(frameImgData, 0, 0);
         dibujarRect({ x: Math.min(startX, x), y: Math.min(startY, y), w: Math.abs(x - startX), h: Math.abs(y - startY) }, '#7c6fff', '🎥 CAM');
       } else {
-        canvasFrame.style.cursor = cursorForPos(x, y);
+        canvasFrame.style.cursor = insideGameplay(x, y) ? 'grab' : cursorForPos(x, y);
       }
     });
 
     canvasFrame.addEventListener('mouseup', e => {
       if (isResizeMode) { isResizeMode = false; resizeCorner = null; actualizarBadges916(); return; }
       if (isMoveMode) { isMoveMode = false; canvasFrame.style.cursor = 'grab'; actualizarBadges916(); return; }
+      if (isMoveGameplay) { isMoveGameplay = false; canvasFrame.style.cursor = 'grab'; return; }
       if (!isDrawing) return;
       isDrawing = false;
       const { x, y } = canvasCoords(e.clientX, e.clientY);
       const zona = { x: Math.round(Math.min(startX, x)), y: Math.round(Math.min(startY, y)), w: Math.round(Math.abs(x - startX)), h: Math.round(Math.abs(y - startY)) };
       if (zona.w < 10 || zona.h < 10) return;
       zonaCam = zona;
-      ctx916.putImageData(frameImgData, 0, 0);
-      dibujarRect(zonaCam, '#7c6fff', '🎥 CAM');
+      recalcularGameplay();
+      redibujarConCam();
       actualizarBadges916();
     });
 
-    canvasFrame.addEventListener('mouseleave', () => { isMoveMode = false; isResizeMode = false; isDrawing = false; });
+    canvasFrame.addEventListener('mouseleave', () => { isMoveMode = false; isResizeMode = false; isDrawing = false; isMoveGameplay = false; });
 
     // Touch events (resize / move / draw)
     canvasFrame.addEventListener('touchstart', e => {
@@ -1801,12 +1969,15 @@
       const { x, y } = canvasCoords(e.touches[0].clientX, e.touches[0].clientY);
       const corner = nearCorner(x, y);
       if (corner) {
-        isResizeMode = true; isMoveMode = false; isDrawing = false; resizeCorner = corner;
+        isResizeMode = true; isMoveMode = false; isDrawing = false; isMoveGameplay = false; resizeCorner = corner;
       } else if (insideZona(x, y)) {
-        isMoveMode = true; isResizeMode = false; isDrawing = false;
+        isMoveMode = true; isResizeMode = false; isDrawing = false; isMoveGameplay = false;
         moveOffsetX = x - zonaCam.x; moveOffsetY = y - zonaCam.y;
+      } else if (modo916 === 'con-cam' && insideGameplay(x, y)) {
+        isMoveGameplay = true; isMoveMode = false; isResizeMode = false; isDrawing = false;
+        moveGPOffsetX = x - ventanaGameplay.x; moveGPOffsetY = y - ventanaGameplay.y;
       } else {
-        isDrawing = true; isMoveMode = false; isResizeMode = false;
+        isDrawing = true; isMoveMode = false; isResizeMode = false; isMoveGameplay = false;
         startX = x; startY = y;
       }
     }, { passive: false });
@@ -1816,12 +1987,14 @@
       const { x, y } = canvasCoords(e.touches[0].clientX, e.touches[0].clientY);
       if (isResizeMode) {
         applyResize(x, y);
-        ctx916.putImageData(frameImgData, 0, 0);
-        dibujarRect(zonaCam, '#7c6fff', '🎥 CAM');
+        recalcularGameplay();
+        redibujarConCam();
       } else if (isMoveMode && zonaCam) {
         zonaCam = clampZona({ x: x - moveOffsetX, y: y - moveOffsetY, w: zonaCam.w, h: zonaCam.h });
-        ctx916.putImageData(frameImgData, 0, 0);
-        dibujarRect(zonaCam, '#7c6fff', '🎥 CAM');
+        recalcularGameplay();
+        redibujarConCam();
+      } else if (isMoveGameplay && ventanaGameplay) {
+        moverGameplay(x, y);
       } else if (isDrawing) {
         ctx916.putImageData(frameImgData, 0, 0);
         dibujarRect({ x: Math.min(startX, x), y: Math.min(startY, y), w: Math.abs(x - startX), h: Math.abs(y - startY) }, '#7c6fff', '🎥 CAM');
@@ -1832,14 +2005,15 @@
       e.preventDefault();
       if (isResizeMode) { isResizeMode = false; resizeCorner = null; actualizarBadges916(); return; }
       if (isMoveMode) { isMoveMode = false; actualizarBadges916(); return; }
+      if (isMoveGameplay) { isMoveGameplay = false; return; }
       if (!isDrawing) return;
       isDrawing = false;
       const { x, y } = canvasCoords(e.changedTouches[0].clientX, e.changedTouches[0].clientY);
       const zona = { x: Math.round(Math.min(startX, x)), y: Math.round(Math.min(startY, y)), w: Math.round(Math.abs(x - startX)), h: Math.round(Math.abs(y - startY)) };
       if (zona.w < 10 || zona.h < 10) return;
       zonaCam = zona;
-      ctx916.putImageData(frameImgData, 0, 0);
-      dibujarRect(zonaCam, '#7c6fff', '🎥 CAM');
+      recalcularGameplay();
+      redibujarConCam();
       actualizarBadges916();
     }, { passive: false });
 
@@ -1867,6 +2041,13 @@
         fd.append('camX', zonaCam.x); fd.append('camY', zonaCam.y);
         fd.append('camW', zonaCam.w); fd.append('camH', zonaCam.h);
         fd.append('camPosicion', camPosicion);
+        if (ventanaGameplay) {
+          fd.append('gpX', Math.round(ventanaGameplay.x)); fd.append('gpY', Math.round(ventanaGameplay.y));
+          fd.append('gpW', Math.round(ventanaGameplay.w)); fd.append('gpH', Math.round(ventanaGameplay.h));
+        }
+      } else if (ventanaSinCam) {
+        fd.append('cropX', Math.round(ventanaSinCam.x)); fd.append('cropY', Math.round(ventanaSinCam.y));
+        fd.append('cropW', Math.round(ventanaSinCam.w)); fd.append('cropH', Math.round(ventanaSinCam.h));
       }
 
       let jobId;

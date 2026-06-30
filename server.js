@@ -319,7 +319,14 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
   let args;
 
   if (modoCam === 'sin-cam') {
-    const filtro = `scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920`;
+    const cropCoords = ['cropX','cropY','cropW','cropH'].map(k => Math.round(Number(req.body[k])));
+    let filtro;
+    if (cropCoords.every(v => !isNaN(v) && v >= 0) && cropCoords[2] > 0 && cropCoords[3] > 0) {
+      const [crX, crY, crW, crH] = cropCoords;
+      filtro = `crop=${crW}:${crH}:${crX}:${crY},scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920`;
+    } else {
+      filtro = `scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920`;
+    }
     args = ['-i', inputFile, '-vf', filtro, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-c:a', 'aac', '-b:a', '128k', '-y', outputFile];
   } else {
     const camCoords = ['camX','camY','camW','camH'].map(k => Math.round(Number(req.body[k])));
@@ -334,7 +341,12 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
 
     const filtroCam = `crop=${cw}:${ch}:${cx}:${cy},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
     let filtroGameplay = `scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
-    if (videoW > 0 && videoH > 0) {
+
+    const gpCoords = ['gpX','gpY','gpW','gpH'].map(k => Math.round(Number(req.body[k])));
+    if (gpCoords.every(v => !isNaN(v) && v >= 0) && gpCoords[2] > 0 && gpCoords[3] > 0) {
+      const [gx, gy, gw, gh] = gpCoords;
+      filtroGameplay = `crop=${gw}:${gh}:${gx}:${gy},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
+    } else if (videoW > 0 && videoH > 0) {
       const candidates = [
         { x: 0,     y: 0,      w: videoW,       h: cy           },
         { x: 0,     y: cy+ch,  w: videoW,       h: videoH-cy-ch },
