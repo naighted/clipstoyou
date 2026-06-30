@@ -460,12 +460,14 @@ app.post('/dividir', upload.single('video'), async (req, res) => {
       .update({ usos_hoy: usos + 1, ultimo_reset: hoy, total_usos: (u?.total_usos || 0) + 1 })
       .eq('id', req.user.id);
 
+    const nombreBase = path.parse(req.file.originalname).name.replace(/[\\/:*?"<>|]/g, '').trim() || 'video';
+
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="partes.zip"');
 
     const zip = archiver('zip');
     zip.pipe(res);
-    partes.forEach(parte => zip.file(path.join(outputDir, parte), { name: parte }));
+    partes.forEach((parte, i) => zip.file(path.join(outputDir, parte), { name: `${nombreBase} - parte ${i + 1}.mp4` }));
     zip.finalize();
 
     zip.on('end', () => {
