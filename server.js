@@ -135,6 +135,17 @@ app.get('/api/usuario', async (req, res) => {
   });
 });
 
+app.get('/api/conteo-usuarios', async (req, res) => {
+  try {
+    const { count } = await supabase
+      .from('usuarios')
+      .select('*', { count: 'exact', head: true });
+    res.json({ total: count || 0, limite: 100 });
+  } catch (e) {
+    res.json({ total: 0, limite: 100 });
+  }
+});
+
 // ─── ADMIN ───────────────────────────────────────────────────────
 const ADMIN_EMAIL = process.env.ADMIN_EMAIL || 'felixfernandezcardenas@hotmail.com';
 function esAdmin(req, res, next) {

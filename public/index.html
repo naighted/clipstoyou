@@ -559,9 +559,14 @@
     }
 
     .plan-nombre { font-size: 1rem; font-weight: 700; margin-bottom: 6px; }
+    .plan-precio-anterior { font-size: 1rem; color: #555; text-decoration: line-through; font-weight: 400; margin-bottom: 0; line-height: 1.2; }
+    .plan-oferta-tag { font-size: 0.7rem; font-weight: 700; color: #22c55e; background: #22c55e18; border: 1px solid #22c55e44; border-radius: 99px; padding: 2px 8px; display: inline-block; margin-bottom: 2px; }
     .plan-precio { font-size: 2.2rem; font-weight: 800; margin-bottom: 4px; letter-spacing: -1px; }
     .plan-precio span { font-size: 0.9rem; font-weight: 400; color: var(--gris); }
-    .plan-desc { color: var(--gris); font-size: 0.8rem; margin-bottom: 22px; }
+    .plan-desc { color: var(--gris); font-size: 0.8rem; margin-bottom: 12px; }
+    .plan-plazas { font-size: 0.72rem; font-weight: 600; color: #f97316; margin-bottom: 18px; display: flex; flex-direction: column; gap: 4px; }
+    .plan-plazas-bar { width: 100%; height: 4px; background: #2a2a2a; border-radius: 99px; overflow: hidden; }
+    .plan-plazas-fill { height: 100%; background: linear-gradient(90deg, #f97316, #ea580c); border-radius: 99px; width: 0%; transition: width 1s ease; }
 
     .plan-features { display: flex; flex-direction: column; gap: 10px; margin-bottom: 24px; }
     .plan-feat { font-size: 0.82rem; color: #ccc; display: flex; align-items: center; gap: 8px; }
@@ -1004,8 +1009,14 @@
       <div class="plan-card destacado">
         <div class="plan-badge" data-i18n="proBadge">✨ Más popular</div>
         <div class="plan-nombre">Pro</div>
+        <div class="plan-precio-anterior">10€ <span data-i18n="planPer">/mes</span></div>
+        <div class="plan-oferta-tag" data-i18n="ofertaTag">🏷️ Oferta de lanzamiento</div>
         <div class="plan-precio">4,99€ <span data-i18n="planPer">/mes</span></div>
         <div class="plan-desc" data-i18n="proDesc">Para streamers y creadores</div>
+        <div class="plan-plazas" id="plazasPro">
+          <span id="plazasProTexto">⏳ Cargando...</span>
+          <div class="plan-plazas-bar"><div class="plan-plazas-fill" id="plazasProFill"></div></div>
+        </div>
         <div class="plan-features">
           <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="proF1">Divisiones de video ilimitadas</span></div>
           <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="proF2">Archivos hasta 4 GB</span></div>
@@ -1020,8 +1031,14 @@
       <div class="plan-card promax-card">
         <div class="plan-badge" data-i18n="promaxBadge" style="background:linear-gradient(135deg,#f97316,#ea580c);color:#fff;">🚀 Pro Max</div>
         <div class="plan-nombre">Pro Max</div>
+        <div class="plan-precio-anterior">15€ <span data-i18n="planPer">/mes</span></div>
+        <div class="plan-oferta-tag" data-i18n="ofertaTag">🏷️ Oferta de lanzamiento</div>
         <div class="plan-precio">9,99€ <span data-i18n="planPer">/mes</span></div>
         <div class="plan-desc" data-i18n="promaxDesc">Para creadores que publican a diario</div>
+        <div class="plan-plazas" id="plazasPromax">
+          <span id="plazasPromaxTexto">⏳ Cargando...</span>
+          <div class="plan-plazas-bar"><div class="plan-plazas-fill" id="plazasPromaxFill"></div></div>
+        </div>
         <div class="plan-features">
           <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="promaxF1">Todo lo de Pro</span></div>
           <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="promaxF2">Conversiones 9:16 <strong>ilimitadas</strong></span></div>
@@ -1093,6 +1110,7 @@
         pp4: 'Sin límite diario', pp5: 'Acceso anticipado a novedades',
         linkPrecios: 'Precios',
         freeDesc: 'Para probar sin compromiso', freeF1: '3 divisiones de video al día', freeF2: 'Archivos hasta 4 GB', freeF3: 'ZIP con todas las partes', freeF4: '2 conversiones 9:16 de prueba', freeLim1: 'Sin límite diario', freeLim2: 'Convertidor 9:16 ilimitado', btnFreeStart: 'Empezar gratis',
+        ofertaTag: '🏷️ Oferta de lanzamiento',
         proBadge: '✨ Más popular', proDesc: 'Para streamers y creadores', proF1: 'Divisiones de video ilimitadas', proF2: 'Archivos hasta 4 GB', proF3: 'ZIP con todas las partes', proF4: '7 conversiones 9:16 por semana', proF5: 'Acceso anticipado a novedades', btnProSub: '⚡ Suscribirse — 4,99€/mes',
         promaxBadge: '🚀 Pro Max', promaxDesc: 'Para creadores que publican a diario', promaxF1: 'Todo lo de Pro', promaxF2: 'Conversiones 9:16 <strong>ilimitadas</strong>', promaxF3: 'Acceso anticipado a novedades', btnPromaxSub: '🚀 Suscribirse — 9,99€/mes',
         camInstruccion: '📌 Dibuja un rectángulo sobre <strong style="color:#fff">tu cámara/webcam</strong>. El gameplay se detecta automáticamente.',
@@ -1132,6 +1150,7 @@
         pp4: 'No daily limit', pp5: 'Early access to new features',
         linkPrecios: 'Pricing',
         freeDesc: 'Try it with no commitment', freeF1: '3 video splits per day', freeF2: 'Files up to 4 GB', freeF3: 'ZIP with all parts', freeF4: '2 trial 9:16 conversions', freeLim1: 'No daily limit', freeLim2: 'Unlimited 9:16 converter', btnFreeStart: 'Get started free',
+        ofertaTag: '🏷️ Launch offer',
         proBadge: '✨ Most popular', proDesc: 'For streamers and creators', proF1: 'Unlimited video splits', proF2: 'Files up to 4 GB', proF3: 'ZIP with all parts', proF4: '7 9:16 conversions per week', proF5: 'Early access to new features', btnProSub: '⚡ Subscribe — €4.99/mo',
         promaxBadge: '🚀 Pro Max', promaxDesc: 'For creators who publish daily', promaxF1: 'Everything in Pro', promaxF2: '<strong>Unlimited</strong> 9:16 conversions', promaxF3: 'Early access to new features', btnPromaxSub: '🚀 Subscribe — €9.99/mo',
         camInstruccion: '📌 Draw a rectangle over <strong style="color:#fff">your camera/webcam</strong>. Gameplay is detected automatically.',
@@ -1419,6 +1438,27 @@
     // ─── ESTADO DE USUARIO ────────────────────────────────────
     let usuarioActual = null;
 
+    async function cargarConteoUsuarios() {
+      try {
+        const r = await fetch('/api/conteo-usuarios');
+        const d = await r.json();
+        const quedan = Math.max(0, d.limite - d.total);
+        const pct = Math.min(100, (d.total / d.limite) * 100);
+        const idioma = document.documentElement.lang || 'es';
+        const txt = quedan > 0
+          ? (idioma === 'en'
+              ? `🔥 ${quedan} of ${d.limite} launch spots left`
+              : `🔥 Quedan ${quedan} de ${d.limite} plazas de lanzamiento`)
+          : (idioma === 'en' ? '✅ Launch price active' : '✅ Precio de lanzamiento activo');
+        ['Pro', 'Promax'].forEach(id => {
+          const el = document.getElementById(`plazas${id}Texto`);
+          const fill = document.getElementById(`plazas${id}Fill`);
+          if (el) el.textContent = txt;
+          if (fill) fill.style.width = pct + '%';
+        });
+      } catch (e) {}
+    }
+
     async function cargarUsuario() {
       const res = await fetch('/api/usuario');
       const data = await res.json();
@@ -1446,6 +1486,7 @@
     }
 
     cargarUsuario();
+    cargarConteoUsuarios();
 
     async function irACheckout(e, plan = 'pro') {
       if (!usuarioActual || !usuarioActual.autenticado) {
