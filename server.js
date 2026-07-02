@@ -320,7 +320,7 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
 
   if (modoCam === 'blur') {
     const filterComplex = [
-      '[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=25[bg]',
+      '[0:v]scale=270:480:force_original_aspect_ratio=increase,crop=270:480,gblur=sigma=8,scale=1080:1920[bg]',
       '[0:v]scale=1080:1920:force_original_aspect_ratio=decrease[fg]',
       '[bg][fg]overlay=(W-w)/2:(H-h)/2[out]'
     ].join(';');
