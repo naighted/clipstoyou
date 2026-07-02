@@ -1469,7 +1469,7 @@
         headerAuth.innerHTML = `
           <div class="usuario-info">
             ${badgeStr}
-            <span>${data.nombre.split(' ')[0]}</span>
+            <span ${data.isAdmin ? `title="${data.nombre.split(' ')[0]}" style="cursor:default;letter-spacing:2px;" onmouseenter="this.textContent=this.title" onmouseleave="this.textContent='••••••••'"` : ''}>${data.isAdmin ? '••••••••' : data.nombre.split(' ')[0]}</span>
             ${data.isAdmin ? '<a href="/admin" style="color:#7c6fff;font-size:0.78rem;text-decoration:none;font-weight:600;" title="Panel de administración">⚙ Admin</a>' : ''}
             <a href="/logout" class="btn-logout">${idioma === 'es' ? 'Salir' : 'Logout'}</a>
           </div>`;
