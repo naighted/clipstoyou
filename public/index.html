@@ -893,9 +893,10 @@
         <div id="panelConvertir">
 
           <!-- Toggle modo -->
-          <div style="display:flex;gap:8px;margin-bottom:12px;">
-            <button id="btnModoCam"    class="btn-sel abajo activo" onclick="setModo916('con-cam')"  style="flex:1;font-size:0.78rem;">🎥 Con webcam</button>
-            <button id="btnModoSinCam" class="btn-sel arriba"       onclick="setModo916('sin-cam')" style="flex:1;font-size:0.78rem;">📹 Sin webcam</button>
+          <div style="display:flex;gap:6px;margin-bottom:12px;">
+            <button id="btnModoCam"    class="btn-sel abajo activo" onclick="setModo916('con-cam')"  style="flex:1;font-size:0.75rem;">🎥 Con webcam</button>
+            <button id="btnModoSinCam" class="btn-sel arriba"       onclick="setModo916('sin-cam')" style="flex:1;font-size:0.75rem;">📹 Sin webcam</button>
+            <button id="btnModoBlur"   class="btn-sel arriba"       onclick="setModo916('blur')"    style="flex:1;font-size:0.75rem;">✨ Fondo blur</button>
           </div>
 
           <div class="zona-subida" id="zonaSubida916" onclick="abrirSubida916()">
@@ -954,6 +955,24 @@
             </div>
             <div style="height:12px;"></div>
             <button class="btn-principal" id="btnConvertirSinCam" onclick="convertir916()" data-i18n="btnConvertir916" style="opacity:0.4;cursor:not-allowed;">Convertir a 9:16</button>
+          </div>
+
+          <!-- Editor FONDO BLUR -->
+          <div id="editorBlur916" style="display:none;margin-top:10px;">
+            <div style="display:flex;align-items:center;gap:10px;background:#1a1a1a;border:1px solid #2a2a2a;border-radius:8px;padding:8px 12px;margin-bottom:12px;">
+              <span style="font-size:1rem;">🎬</span>
+              <span id="blurNombreArchivo" style="font-size:0.82rem;color:#ccc;flex:1;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">—</span>
+              <button onclick="resetConvertir916()" data-i18n="cambiar" style="background:none;border:1px solid #333;color:#888;padding:3px 10px;border-radius:6px;font-size:0.75rem;cursor:pointer;">Cambiar</button>
+            </div>
+            <div style="background:#12102a;border:1px solid #2a2a3a;border-radius:10px;padding:14px;margin-bottom:14px;">
+              <p data-i18n="blurDesc" style="font-size:0.82rem;color:#ccc;margin-bottom:8px;line-height:1.5;">✨ El video original se centra en el formato 9:16 y el fondo se rellena con el mismo video ampliado y difuminado. Perfecto para clips de YouTube o podcasts en TikTok.</p>
+              <div style="display:flex;gap:10px;align-items:center;font-size:0.75rem;color:#666;">
+                <span>🖼️ Fondo: blur</span><span>▶</span>
+                <span style="color:#7c6fff;">📺 Video centrado</span><span>▶</span>
+                <span style="color:#22c55e;">📱 9:16 listo</span>
+              </div>
+            </div>
+            <button class="btn-principal" id="btnConvertirBlur" onclick="convertir916()" data-i18n="btnConvertir916" style="opacity:1;cursor:pointer;">Convertir a 9:16</button>
           </div>
 
           <!-- Progreso, error y resultado (compartidos) -->
@@ -1112,6 +1131,7 @@
         gameplayInstruccion: '🎮 Arrastra o redimensiona (esquinas) el recuadro verde para elegir qué parte del gameplay se ve. Puede solapar con la cámara.',
         sinCamDesc: '🔍 El video se ampliará automáticamente para rellenar el formato vertical 9:16. Perfecto para podcasts, clips de YouTube o cualquier video sin cámara.',
         sinCamCropInstruccion: '🖱️ Arrastra o redimensiona (esquinas) el recuadro verde para elegir qué parte del video se ve en el resultado vertical.',
+        blurDesc: '✨ El video original se centra en el formato 9:16 y el fondo se rellena con el mismo video ampliado y difuminado. Perfecto para clips de YouTube o podcasts en TikTok.',
         btnConvertir916: 'Convertir a 9:16', noClose: 'No cierres la página mientras se procesa',
         videoConvertido: '✅ ¡Video convertido!', btnDescargar916: '⬇️ Descargar 9:16', btnDividirPartes: '✂️ Dividir en partes', btnConvertirOtro: '🔄 Convertir otro', btnSugerir: 'Sugerir',
       },
@@ -1153,6 +1173,7 @@
         gameplayInstruccion: '🎮 Drag or resize (corners) the green box to choose what part of the gameplay shows. It can overlap the camera.',
         sinCamDesc: '🔍 The video will be automatically zoomed to fill the vertical 9:16 format. Perfect for podcasts, YouTube clips or any video without a camera.',
         sinCamCropInstruccion: '🖱️ Drag or resize (corners) the green box to choose what part of the video shows in the vertical result.',
+        blurDesc: '✨ The original video is centered in the 9:16 frame and the background is filled with the same video zoomed in and blurred. Perfect for YouTube clips or podcasts on TikTok.',
         btnConvertir916: 'Convert to 9:16', noClose: 'Don\'t close the page while processing',
         videoConvertido: '✅ Video converted!', btnDescargar916: '⬇️ Download 9:16', btnDividirPartes: '✂️ Split into parts', btnConvertirOtro: '🔄 Convert another', btnSugerir: 'Suggest',
       }
@@ -1632,16 +1653,22 @@
       modo916 = m;
       document.getElementById('btnModoCam').classList.toggle('activo', m === 'con-cam');
       document.getElementById('btnModoSinCam').classList.toggle('activo', m === 'sin-cam');
+      document.getElementById('btnModoBlur').classList.toggle('activo', m === 'blur');
       document.getElementById('zonaSubTxt').textContent = m === 'sin-cam'
         ? 'Video horizontal → zoom automático a 9:16'
+        : m === 'blur'
+        ? 'Video horizontal → fondo difuminado + video centrado'
         : 'Video horizontal (16:9) → salida vertical (9:16)';
-      // Si ya hay video cargado, mostrar el editor correcto
       if (videoFile916) {
         document.getElementById('editor916').style.display = m === 'con-cam' ? 'block' : 'none';
         document.getElementById('editorSinCam916').style.display = m === 'sin-cam' ? 'block' : 'none';
+        document.getElementById('editorBlur916').style.display = m === 'blur' ? 'block' : 'none';
         if (m === 'sin-cam') {
           const btn = document.getElementById('btnConvertirSinCam');
           btn.style.opacity = '1'; btn.style.cursor = 'pointer';
+        }
+        if (m === 'blur') {
+          document.getElementById('blurNombreArchivo').textContent = videoFile916.name;
         }
       }
     }
@@ -1656,8 +1683,10 @@
       gameplayTocado = false;
       document.getElementById('conCamNombreArchivo').textContent = '—';
       document.getElementById('sinCamNombreArchivo').textContent = '—';
+      document.getElementById('blurNombreArchivo').textContent = '—';
       document.getElementById('editor916').style.display = 'none';
       document.getElementById('editorSinCam916').style.display = 'none';
+      document.getElementById('editorBlur916').style.display = 'none';
       document.getElementById('resultado916').style.display = 'none';
       document.getElementById('errorBox916').style.display = 'none';
       document.getElementById('progreso916Cont').style.display = 'none';
@@ -1844,12 +1873,19 @@
         if (modo916 === 'sin-cam') {
           document.getElementById('editor916').style.display = 'none';
           document.getElementById('editorSinCam916').style.display = 'block';
+          document.getElementById('editorBlur916').style.display = 'none';
           document.getElementById('sinCamNombreArchivo').textContent = file.name;
           const b = document.getElementById('btnConvertirSinCam');
           b.style.opacity = '1'; b.style.cursor = 'pointer';
+        } else if (modo916 === 'blur') {
+          document.getElementById('editor916').style.display = 'none';
+          document.getElementById('editorSinCam916').style.display = 'none';
+          document.getElementById('editorBlur916').style.display = 'block';
+          document.getElementById('blurNombreArchivo').textContent = file.name;
         } else {
           document.getElementById('editor916').style.display = 'block';
           document.getElementById('editorSinCam916').style.display = 'none';
+          document.getElementById('editorBlur916').style.display = 'none';
           document.getElementById('conCamNombreArchivo').textContent = file.name;
         }
       });

@@ -312,13 +312,20 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
 
   if (!req.file) return res.status(400).json({ error: 'No se subió ningún video.' });
 
-  const modoCam = req.body.modoCam === 'sin-cam' ? 'sin-cam' : 'con-cam';
+  const modoCam = ['sin-cam', 'blur'].includes(req.body.modoCam) ? req.body.modoCam : 'con-cam';
   const inputFile = req.file.path;
   const jobId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const outputFile = path.join(os.tmpdir(), 'v916_' + jobId + '.mp4');
   let args;
 
-  if (modoCam === 'sin-cam') {
+  if (modoCam === 'blur') {
+    const filterComplex = [
+      '[0:v]scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920,gblur=sigma=25[bg]',
+      '[0:v]scale=1080:1920:force_original_aspect_ratio=decrease[fg]',
+      '[bg][fg]overlay=(W-w)/2:(H-h)/2[out]'
+    ].join(';');
+    args = ['-i', inputFile, '-filter_complex', filterComplex, '-map', '[out]', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-y', outputFile];
+  } else if (modoCam === 'sin-cam') {
     const cropCoords = ['cropX','cropY','cropW','cropH'].map(k => Math.round(Number(req.body[k])));
     let filtro;
     if (cropCoords.every(v => !isNaN(v) && v >= 0) && cropCoords[2] > 0 && cropCoords[3] > 0) {
