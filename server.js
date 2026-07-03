@@ -372,7 +372,8 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
     args = ['-i', inputFile, '-filter_complex', filterComplex, '-map', '[out]', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-y', outputFile];
   }
 
-  const nombreOriginal916 = path.parse(req.file.originalname).name.replace(/[\\/:*?"<>|]/g, '').trim() || 'video';
+  const originalName916Decoded = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+  const nombreOriginal916 = path.parse(originalName916Decoded).name.replace(/[\\/:*?"<>|]/g, '').trim() || 'video';
 
   // Register job and respond immediately — no timeout possible
   jobs916.set(jobId, { status: 'processing', createdAt: Date.now(), outputFile: null, error: null, nombreOriginal: nombreOriginal916 });
@@ -482,7 +483,8 @@ app.post('/dividir', upload.single('video'), async (req, res) => {
       .update({ usos_hoy: usos + 1, ultimo_reset: hoy, total_usos: (u?.total_usos || 0) + 1 })
       .eq('id', req.user.id);
 
-    const nombreBase = path.parse(req.file.originalname).name.replace(/[\\/:*?"<>|]/g, '').trim() || 'video';
+    const originalNameDecoded = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+    const nombreBase = path.parse(originalNameDecoded).name.replace(/[\\/:*?"<>|]/g, '').trim() || 'video';
 
     res.setHeader('Content-Type', 'application/zip');
     res.setHeader('Content-Disposition', 'attachment; filename="partes.zip"');
