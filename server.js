@@ -419,7 +419,7 @@ app.get('/api/job916/:jobId/download', (req, res) => {
   if (!job || job.status !== 'done' || !job.outputFile) return res.status(404).json({ error: 'No disponible' });
   const nombreDescarga = (job.nombreOriginal || 'video') + '_9_16.mp4';
   res.setHeader('Content-Type', 'video/mp4');
-  res.setHeader('Content-Disposition', `attachment; filename="${nombreDescarga}"`);
+  res.setHeader('Content-Disposition', `attachment; filename="video_9_16.mp4"; filename*=UTF-8''${encodeURIComponent(nombreDescarga)}`);
   const stream = fs.createReadStream(job.outputFile);
   stream.pipe(res);
   stream.on('end', () => {
