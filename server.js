@@ -372,8 +372,10 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
     args = ['-i', inputFile, '-filter_complex', filterComplex, '-map', '[out]', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-y', outputFile];
   }
 
+  const nombreOriginal916 = path.parse(req.file.originalname).name.replace(/[\\/:*?"<>|]/g, '').trim() || 'video';
+
   // Register job and respond immediately — no timeout possible
-  jobs916.set(jobId, { status: 'processing', createdAt: Date.now(), outputFile: null, error: null });
+  jobs916.set(jobId, { status: 'processing', createdAt: Date.now(), outputFile: null, error: null, nombreOriginal: nombreOriginal916 });
   res.json({ jobId });
 
   // Process in background
@@ -415,8 +417,9 @@ app.get('/api/job916/:jobId', (req, res) => {
 app.get('/api/job916/:jobId/download', (req, res) => {
   const job = jobs916.get(req.params.jobId);
   if (!job || job.status !== 'done' || !job.outputFile) return res.status(404).json({ error: 'No disponible' });
+  const nombreDescarga = (job.nombreOriginal || 'video') + '_9_16.mp4';
   res.setHeader('Content-Type', 'video/mp4');
-  res.setHeader('Content-Disposition', 'attachment; filename="video_9_16.mp4"');
+  res.setHeader('Content-Disposition', `attachment; filename="${nombreDescarga}"`);
   const stream = fs.createReadStream(job.outputFile);
   stream.pipe(res);
   stream.on('end', () => {
