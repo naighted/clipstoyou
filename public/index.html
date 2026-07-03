@@ -2261,7 +2261,8 @@
             blob916 = await dlResp.blob();
             const url = URL.createObjectURL(blob916);
             document.getElementById('linkDescarga916').href = url;
-            document.getElementById('linkDescarga916').download = 'video_9_16.mp4';
+            const nombreBase916 = videoFile916 ? videoFile916.name.replace(/\.[^/.]+$/, '') : 'video';
+            document.getElementById('linkDescarga916').download = nombreBase916 + '_9_16.mp4';
             barra.style.width = '100%';
             document.getElementById('progreso916Cont').style.display = 'none';
             document.getElementById('resultado916').style.display = 'block';
