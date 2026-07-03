@@ -2288,7 +2288,8 @@
 
     function usarEn916EnDividir() {
       if (!blob916) return;
-      const file = new File([blob916], 'video_9_16.mp4', { type: 'video/mp4' });
+      const nombreBase = videoFile916 ? videoFile916.name.replace(/\.[^/.]+$/, '') : 'video';
+      const file = new File([blob916], nombreBase + '_9_16.mp4', { type: 'video/mp4' });
       cambiarTab('dividir');
       const dt = new DataTransfer();
       dt.items.add(file);
