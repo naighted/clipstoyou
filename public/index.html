@@ -721,16 +721,37 @@
     /* FOOTER */
     footer {
       border-top: 1px solid var(--borde);
-      padding: 22px 48px;
+      padding: 32px 48px 24px;
+      display: flex;
+      flex-direction: column;
+      gap: 18px;
+    }
+    .footer-top {
       display: flex;
       align-items: center;
       justify-content: space-between;
       flex-wrap: wrap;
       gap: 10px;
     }
-
+    .footer-bottom {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      flex-wrap: wrap;
+      gap: 12px;
+      border-top: 1px solid var(--borde);
+      padding-top: 16px;
+    }
     footer .logo { font-size: 0.95rem; }
     footer p { color: var(--gris); font-size: 0.78rem; }
+    .footer-legal { display: flex; flex-wrap: wrap; gap: 6px 20px; }
+    .footer-legal a {
+      color: var(--gris);
+      font-size: 0.75rem;
+      text-decoration: none;
+      transition: color 0.2s;
+    }
+    .footer-legal a:hover { color: #fff; }
 
     /* RESPONSIVE */
     @media (max-width: 768px) {
@@ -744,7 +765,9 @@
       .hero { order: 1; }
       .herramienta { order: 2; }
       .como-funciona { padding: 50px 20px; }
-      footer { padding: 20px; flex-direction: column; text-align: center; }
+      footer { padding: 20px; text-align: center; }
+      .footer-top, .footer-bottom { justify-content: center; }
+      .footer-legal { justify-content: center; }
     }
   </style>
 </head>
@@ -1086,8 +1109,18 @@
 
   <!-- FOOTER -->
   <footer>
-    <div class="logo">Clips<span style="color:var(--morado)">ToYou</span></div>
-    <p>© 2025 ClipsToYou — <span data-i18n="footerDesc">Herramienta gratuita para dividir videos</span></p>
+    <div class="footer-top">
+      <div class="logo">Clips<span style="color:var(--morado)">ToYou</span></div>
+      <p>© 2025 ClipsToYou — <span data-i18n="footerDesc">Herramienta gratuita para dividir videos</span></p>
+    </div>
+    <div class="footer-bottom">
+      <nav class="footer-legal" aria-label="Legal">
+        <a href="/terminos" data-i18n="footerTerminos">Términos y condiciones</a>
+        <a href="/privacidad" data-i18n="footerPrivacidad">Política de privacidad</a>
+        <a href="/cookies" data-i18n="footerCookies">Política de cookies</a>
+        <a href="mailto:soporte@clipstoyou.com" data-i18n="footerContacto">Contacto</a>
+      </nav>
+    </div>
   </footer>
 
   <script>
@@ -1112,6 +1145,7 @@
         cf2Titulo: 'Elige cómo dividir', cf2Desc: 'Por duración exacta o por número de partes. Tú decides.',
         cf3Titulo: 'Descarga todo', cf3Desc: 'Recibes un ZIP con todas las partes ordenadas y listas.',
         footerDesc: 'Herramienta gratuita para dividir videos',
+        footerTerminos: 'Términos y condiciones', footerPrivacidad: 'Política de privacidad', footerCookies: 'Política de cookies', footerContacto: 'Contacto',
         preciosTitulo: 'Planes y precios', preciosSub: 'Empieza gratis, actualiza cuando quieras',
         planPer: '/mes', planFreeDesc: 'Para probar sin compromiso', planProDesc: 'Para creadores de contenido',
         planProBadge: '✨ Más popular', btnFree: 'Empezar gratis', btnPro: '⚡ Suscribirse — 4,99€/mes',
@@ -1154,6 +1188,7 @@
         cf2Titulo: 'Choose how to split', cf2Desc: 'By exact duration or by number of parts. You decide.',
         cf3Titulo: 'Download all', cf3Desc: 'You get a ZIP with all parts sorted and ready.',
         footerDesc: 'Free tool to split videos',
+        footerTerminos: 'Terms & conditions', footerPrivacidad: 'Privacy policy', footerCookies: 'Cookie policy', footerContacto: 'Contact',
         preciosTitulo: 'Plans & pricing', preciosSub: 'Start free, upgrade anytime',
         planPer: '/mo', planFreeDesc: 'Try it with no commitment', planProDesc: 'For content creators',
         planProBadge: '✨ Most popular', btnFree: 'Get started free', btnPro: '⚡ Subscribe — €4.99/mo',
@@ -1276,6 +1311,15 @@
     });
 
     btnModoPartes.addEventListener('click', () => {
+      if (dividirDesde916) {
+        // No podemos calcular partes sin saber la duración total del video
+        const msg = idioma === 'es'
+          ? '⚠️ Para dividir por número de partes necesitas subir el video. Descárgalo primero y arrástralo aquí.'
+          : '⚠️ To split by number of parts you need to upload the video. Download it first and drag it here.';
+        errorBox.textContent = msg;
+        errorBox.style.display = 'block';
+        return;
+      }
       modoActual = 'partes';
       btnModoPartes.classList.add('activo');
       btnModoDuracion.classList.remove('activo');

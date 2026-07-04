@@ -500,6 +500,11 @@ app.post('/dividir', upload.single('video'), async (req, res) => {
   });
 });
 
+// ─── PÁGINAS LEGALES ─────────────────────────────────────────────────────────
+app.get('/terminos', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terminos.html')));
+app.get('/privacidad', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacidad.html')));
+app.get('/cookies', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cookies.html')));
+
 // ─── DIVIDIR DIRECTAMENTE DESDE UN JOB 9:16 (sin resubir el video) ──────────
 app.post('/dividir-desde-916/:jobId', express.json(), async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Debes iniciar sesión.' });
