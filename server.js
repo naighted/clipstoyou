@@ -423,10 +423,7 @@ app.get('/api/job916/:jobId/download', (req, res) => {
   res.setHeader('Content-Disposition', `attachment; filename="video_9_16.mp4"; filename*=UTF-8''${encodeURIComponent(nombreDescarga)}`);
   const stream = fs.createReadStream(job.outputFile);
   stream.pipe(res);
-  stream.on('end', () => {
-    try { fs.unlinkSync(job.outputFile); } catch(e) {}
-    jobs916.delete(req.params.jobId);
-  });
+  // File stays until the 30-min cleanup timer removes it (supports multiple downloads)
 });
 
 app.post('/dividir', upload.single('video'), async (req, res) => {

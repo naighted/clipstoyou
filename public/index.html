@@ -1555,6 +1555,7 @@
     let videoFile916 = null;
     let videoNativeW = 1, videoNativeH = 1;
     let blob916 = null;
+    let lastJobId916 = null; // Server-side job ID; used instead of blob to avoid loading 300-500MB into JS heap
 
     // Ventanas de recorte arrastrables (gameplay en con-cam, crop en sin-cam)
     let candidatoGameplay = null;
@@ -1677,6 +1678,7 @@
       zonaCam = null;
       videoFile916 = null;
       blob916 = null;
+      lastJobId916 = null;
       ventanaGameplay = null;
       candidatoGameplay = null;
       ventanaSinCam = null;
@@ -2269,15 +2271,12 @@
           const sdata = await sr.json();
           if (sdata.status === 'done') {
             clearInterval(pollInterval);
-            barra.style.width = '95%';
-            txt.textContent = 'Descargando...';
-            const dlResp = await fetch('/api/job916/' + jobId + '/download');
-            blob916 = await dlResp.blob();
-            const url = URL.createObjectURL(blob916);
-            document.getElementById('linkDescarga916').href = url;
-            const nombreBase916 = videoFile916 ? videoFile916.name.replace(/\.[^/.]+$/, '') : 'video';
-            document.getElementById('linkDescarga916').download = nombreBase916 + '_9_16.mp4';
             barra.style.width = '100%';
+            lastJobId916 = jobId;
+            blob916 = null; // Never load 300-500MB into JS heap — use server URL directly
+            const nombreBase916 = videoFile916 ? videoFile916.name.replace(/\.[^/.]+$/, '') : 'video';
+            document.getElementById('linkDescarga916').href = '/api/job916/' + jobId + '/download';
+            document.getElementById('linkDescarga916').download = nombreBase916 + '_9_16.mp4';
             document.getElementById('progreso916Cont').style.display = 'none';
             document.getElementById('resultado916').style.display = 'block';
             habilitarBtn916();
@@ -2300,15 +2299,32 @@
       if (btn2) { btn2.style.opacity = videoFile916 ? '1' : '0.4'; btn2.style.cursor = videoFile916 ? 'pointer' : 'not-allowed'; }
     }
 
-    function usarEn916EnDividir() {
-      if (!blob916) return;
+    async function usarEn916EnDividir() {
+      if (!lastJobId916) return;
       const nombreBase = videoFile916 ? videoFile916.name.replace(/\.[^/.]+$/, '') : 'video';
-      const file = new File([blob916], nombreBase + '_9_16.mp4', { type: 'video/mp4' });
-      cambiarTab('dividir');
-      const dt = new DataTransfer();
-      dt.items.add(file);
-      document.getElementById('inputArchivo').files = dt.files;
-      document.getElementById('inputArchivo').dispatchEvent(new Event('change'));
+      const lang = document.documentElement.lang || 'es';
+      const btnDividir = document.querySelector('[onclick="usarEn916EnDividir()"]');
+      if (btnDividir) { btnDividir.disabled = true; btnDividir.textContent = lang === 'en' ? 'Loading...' : 'Cargando...'; }
+      try {
+        const resp = await fetch('/api/job916/' + lastJobId916 + '/download');
+        if (!resp.ok) {
+          alert(lang === 'en'
+            ? 'File no longer available on server (expired). Download it first and upload manually to the splitter.'
+            : 'El archivo ya no está disponible en el servidor (expiró). Descárgalo primero y súbelo manualmente al divisor.');
+          return;
+        }
+        const blob = await resp.blob();
+        const file = new File([blob], nombreBase + '_9_16.mp4', { type: 'video/mp4' });
+        cambiarTab('dividir');
+        const dt = new DataTransfer();
+        dt.items.add(file);
+        document.getElementById('inputArchivo').files = dt.files;
+        document.getElementById('inputArchivo').dispatchEvent(new Event('change'));
+      } catch(e) {
+        alert(lang === 'en' ? 'Error loading file.' : 'Error al cargar el archivo.');
+      } finally {
+        if (btnDividir) { btnDividir.disabled = false; btnDividir.innerHTML = '✂️ Dividir en partes'; }
+      }
     }
 
     // Mostrar mensaje si vuelve de pago
