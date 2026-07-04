@@ -1822,6 +1822,7 @@
       const url = URL.createObjectURL(file);
       const vid = document.createElement('video');
       vid.src = url;
+      vid.preload = 'metadata';
       vid.muted = true;
 
       vid.addEventListener('loadedmetadata', () => {
@@ -1852,6 +1853,9 @@
         ctx916.drawImage(vid, 0, 0);
         frameImgData = ctx916.getImageData(0, 0, canvasFrame.width, canvasFrame.height);
         URL.revokeObjectURL(url);
+        vid.src = '';
+        vid.load();
+        if (blob916) { blob916 = null; }
         zonaCam = null;
         ventanaGameplay = null;
         candidatoGameplay = null;
