@@ -1848,10 +1848,13 @@
       vid.addEventListener('seeked', () => {
         videoNativeW = vid.videoWidth;
         videoNativeH = vid.videoHeight;
-        canvasFrame.width = videoNativeW;
-        canvasFrame.height = videoNativeH;
-        ctx916.drawImage(vid, 0, 0);
-        frameImgData = ctx916.getImageData(0, 0, canvasFrame.width, canvasFrame.height);
+        const previewScale = Math.min(1, 1920 / videoNativeW, 1080 / videoNativeH);
+        const previewW = Math.round(videoNativeW * previewScale);
+        const previewH = Math.round(videoNativeH * previewScale);
+        canvasFrame.width = previewW;
+        canvasFrame.height = previewH;
+        ctx916.drawImage(vid, 0, 0, previewW, previewH);
+        frameImgData = ctx916.getImageData(0, 0, previewW, previewH);
         URL.revokeObjectURL(url);
         vid.src = '';
         vid.load();
@@ -1867,8 +1870,8 @@
         document.getElementById('errorBox916').style.display = 'none';
 
         // Configurar canvas sin-cam con ventana de recorte arrastrable
-        canvasFrameSinCam.width = videoNativeW;
-        canvasFrameSinCam.height = videoNativeH;
+        canvasFrameSinCam.width = previewW;
+        canvasFrameSinCam.height = previewH;
         ctxSinCam.putImageData(frameImgData, 0, 0);
         const v = calcVentana(0, 0, videoNativeW, videoNativeH, 1080, 1920);
         ventanaSinCam = { x: v.x, y: v.y, w: v.w, h: v.h };
@@ -2190,7 +2193,12 @@
 
     async function convertir916() {
       if (!usuarioActual || !usuarioActual.autenticado) { window.location.href = '/auth/google'; return; }
-      if (modo916 === 'con-cam' && !zonaCam) { alert('Marca primero la zona de tu cámara.'); return; }
+      if (modo916 === 'con-cam') {
+        if (!zonaCam) { alert('Marca primero la zona de tu cámara.'); return; }
+        if (zonaCam.w < 10 || zonaCam.h < 10 || isNaN(zonaCam.x) || isNaN(zonaCam.y) || zonaCam.x < 0 || zonaCam.y < 0) {
+          alert('La zona de cámara no es válida. Dibújala de nuevo.'); zonaCam = null; actualizarBadges916(); return;
+        }
+      }
       if (!videoFile916) { alert('No hay video cargado.'); return; }
 
       const btn = document.getElementById('btnConvertir916');
@@ -2208,17 +2216,18 @@
       fd.append('video', videoFile916);
       fd.append('modoCam', modo916);
       fd.append('videoW', videoNativeW); fd.append('videoH', videoNativeH);
+      const coordScale = videoNativeW / (canvasFrame.width || videoNativeW);
       if (modo916 === 'con-cam') {
-        fd.append('camX', zonaCam.x); fd.append('camY', zonaCam.y);
-        fd.append('camW', zonaCam.w); fd.append('camH', zonaCam.h);
+        fd.append('camX', Math.round(zonaCam.x * coordScale)); fd.append('camY', Math.round(zonaCam.y * coordScale));
+        fd.append('camW', Math.round(zonaCam.w * coordScale)); fd.append('camH', Math.round(zonaCam.h * coordScale));
         fd.append('camPosicion', camPosicion);
         if (ventanaGameplay) {
-          fd.append('gpX', Math.round(ventanaGameplay.x)); fd.append('gpY', Math.round(ventanaGameplay.y));
-          fd.append('gpW', Math.round(ventanaGameplay.w)); fd.append('gpH', Math.round(ventanaGameplay.h));
+          fd.append('gpX', Math.round(ventanaGameplay.x * coordScale)); fd.append('gpY', Math.round(ventanaGameplay.y * coordScale));
+          fd.append('gpW', Math.round(ventanaGameplay.w * coordScale)); fd.append('gpH', Math.round(ventanaGameplay.h * coordScale));
         }
       } else if (ventanaSinCam) {
-        fd.append('cropX', Math.round(ventanaSinCam.x)); fd.append('cropY', Math.round(ventanaSinCam.y));
-        fd.append('cropW', Math.round(ventanaSinCam.w)); fd.append('cropH', Math.round(ventanaSinCam.h));
+        fd.append('cropX', Math.round(ventanaSinCam.x * coordScale)); fd.append('cropY', Math.round(ventanaSinCam.y * coordScale));
+        fd.append('cropW', Math.round(ventanaSinCam.w * coordScale)); fd.append('cropH', Math.round(ventanaSinCam.h * coordScale));
       }
 
       let jobId;
