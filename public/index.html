@@ -1280,11 +1280,13 @@
       zonaSubida.style.display = 'block';
       archivoBox.style.display = 'none';
       partesEstimadas.style.display = 'none';
+      errorBox.style.display = 'none';
       verificar();
     });
 
     function seleccionar(archivo) {
       dividirDesde916 = null;
+      errorBox.style.display = 'none';
       archivoActual = archivo;
       archivoNombre.textContent = '📁 ' + archivo.name;
       zonaSubida.style.display = 'none';
@@ -1309,6 +1311,7 @@
       btnModoPartes.classList.remove('activo');
       seccionDuracion.style.display = 'block';
       seccionPartes.style.display = 'none';
+      errorBox.style.display = 'none';
       actualizarEstimacion(); verificar();
     });
 
