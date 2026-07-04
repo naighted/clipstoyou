@@ -7,18 +7,20 @@
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/favicon.png">
   <style>
-    :root { --bg: #0d0d0d; --card: #111; --borde: #222; --morado: #7c3aed; --gris: #888; }
+    :root { --bg: #0d0d0d; --borde: #222; --morado: #7c3aed; --gris: #888; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: var(--bg); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; line-height: 1.7; }
-    header { border-bottom: 1px solid var(--borde); padding: 18px 48px; display: flex; align-items: center; gap: 16px; }
-    header a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; font-weight: 700; }
-    header a span { color: var(--morado); }
+    header { border-bottom: 1px solid var(--borde); padding: 18px 48px; display: flex; align-items: center; justify-content: space-between; }
+    header a.brand { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; font-weight: 700; }
+    header a.brand span { color: var(--morado); }
+    .btn-lang { background: transparent; border: 1px solid var(--borde); color: var(--gris); padding: 5px 14px; border-radius: 20px; cursor: pointer; font-size: 0.82rem; }
+    .btn-lang:hover { color: #fff; border-color: #555; }
     main { max-width: 760px; margin: 0 auto; padding: 48px 24px 80px; }
     h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
     .fecha { color: var(--gris); font-size: 0.85rem; margin-bottom: 36px; }
     h2 { font-size: 1.1rem; font-weight: 700; margin: 32px 0 10px; color: #fff; }
     p { color: #ccc; margin-bottom: 12px; }
-    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; }
+    table { width: 100%; border-collapse: collapse; margin-bottom: 16px; overflow-x: auto; display: block; }
     th { background: #1a1a1a; color: #fff; padding: 10px 14px; text-align: left; font-size: 0.82rem; border: 1px solid var(--borde); }
     td { padding: 9px 14px; font-size: 0.82rem; color: #ccc; border: 1px solid var(--borde); }
     a { color: var(--morado); }
@@ -27,45 +29,66 @@
 </head>
 <body>
   <header>
-    <a href="/"><span style="color:#e0e0e0">Clips</span><span>ToYou</span></a>
+    <a class="brand" href="/"><span style="color:#e0e0e0">Clips</span><span>ToYou</span></a>
+    <button class="btn-lang" onclick="toggleLang()">EN</button>
   </header>
   <main>
-    <h1>Política de cookies</h1>
-    <p class="fecha">Última actualización: 4 de julio de 2025</p>
 
-    <h2>¿Qué son las cookies?</h2>
-    <p>Las cookies son pequeños archivos de texto que los sitios web guardan en tu navegador para recordar información entre visitas.</p>
+    <!-- ESPAÑOL -->
+    <div id="es">
+      <h1>Política de cookies</h1>
+      <p class="fecha">Última actualización: 4 de julio de 2025</p>
+      <h2>¿Qué son las cookies?</h2>
+      <p>Las cookies son pequeños archivos de texto que los sitios web guardan en tu navegador para recordar información entre visitas.</p>
+      <h2>Cookies que usamos</h2>
+      <table>
+        <thead><tr><th>Nombre</th><th>Tipo</th><th>Finalidad</th><th>Duración</th></tr></thead>
+        <tbody>
+          <tr><td>connect.sid</td><td>Esencial</td><td>Mantiene tu sesión iniciada</td><td>30 días</td></tr>
+          <tr><td>Cookies de Google OAuth</td><td>Esencial</td><td>Autenticación mediante Google</td><td>Sesión</td></tr>
+        </tbody>
+      </table>
+      <h2>Cookies esenciales</h2>
+      <p>Solo utilizamos cookies estrictamente necesarias para el funcionamiento del servicio. No usamos cookies de rastreo, publicidad ni análisis de terceros.</p>
+      <h2>¿Puedo desactivar las cookies?</h2>
+      <p>Puedes configurar tu navegador para rechazar cookies, pero el inicio de sesión no funcionará correctamente sin la cookie de sesión (<code style="background:#1a1a1a;padding:2px 6px;border-radius:4px;">connect.sid</code>).</p>
+      <h2>Contacto</h2>
+      <p>Para cualquier consulta escríbenos a <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>.</p>
+    </div>
 
-    <h2>Cookies que usamos</h2>
-    <table>
-      <thead>
-        <tr><th>Nombre</th><th>Tipo</th><th>Finalidad</th><th>Duración</th></tr>
-      </thead>
-      <tbody>
-        <tr>
-          <td>connect.sid</td>
-          <td>Esencial</td>
-          <td>Mantiene tu sesión iniciada</td>
-          <td>30 días</td>
-        </tr>
-        <tr>
-          <td>Cookies de Google OAuth</td>
-          <td>Esencial</td>
-          <td>Autenticación mediante Google</td>
-          <td>Sesión</td>
-        </tr>
-      </tbody>
-    </table>
+    <!-- ENGLISH -->
+    <div id="en" style="display:none">
+      <h1>Cookie policy</h1>
+      <p class="fecha">Last updated: July 4, 2025</p>
+      <h2>What are cookies?</h2>
+      <p>Cookies are small text files that websites store in your browser to remember information between visits.</p>
+      <h2>Cookies we use</h2>
+      <table>
+        <thead><tr><th>Name</th><th>Type</th><th>Purpose</th><th>Duration</th></tr></thead>
+        <tbody>
+          <tr><td>connect.sid</td><td>Essential</td><td>Keeps your session active</td><td>30 days</td></tr>
+          <tr><td>Google OAuth cookies</td><td>Essential</td><td>Authentication via Google</td><td>Session</td></tr>
+        </tbody>
+      </table>
+      <h2>Essential cookies only</h2>
+      <p>We only use cookies strictly necessary for the service to function. We do not use tracking, advertising, or third-party analytics cookies.</p>
+      <h2>Can I disable cookies?</h2>
+      <p>You can configure your browser to reject cookies, but login will not work correctly without the session cookie (<code style="background:#1a1a1a;padding:2px 6px;border-radius:4px;">connect.sid</code>).</p>
+      <h2>Contact</h2>
+      <p>For any questions, write to us at <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>.</p>
+    </div>
 
-    <h2>Cookies esenciales</h2>
-    <p>Solo utilizamos cookies estrictamente necesarias para el funcionamiento del servicio (mantener tu sesión). No usamos cookies de rastreo, publicidad ni análisis de terceros.</p>
-
-    <h2>¿Puedo desactivar las cookies?</h2>
-    <p>Puedes configurar tu navegador para rechazar cookies, pero ten en cuenta que el inicio de sesión no funcionará correctamente sin la cookie de sesión (<code>connect.sid</code>).</p>
-
-    <h2>Contacto</h2>
-    <p>Para cualquier consulta escríbenos a <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>.</p>
   </main>
-  <footer>© 2025 ClipsToYou — <a href="/">Volver al inicio</a></footer>
+  <footer>© 2025 ClipsToYou — <a href="/">Volver al inicio / Back to home</a></footer>
+  <script>
+    var lang = 'es';
+    function toggleLang() {
+      lang = lang === 'es' ? 'en' : 'es';
+      document.getElementById('es').style.display = lang === 'es' ? '' : 'none';
+      document.getElementById('en').style.display = lang === 'en' ? '' : 'none';
+      document.querySelector('.btn-lang').textContent = lang === 'es' ? 'EN' : 'ES';
+      document.documentElement.lang = lang;
+    }
+  </script>
 </body>
 </html>

@@ -7,12 +7,14 @@
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/favicon.png">
   <style>
-    :root { --bg: #0d0d0d; --card: #111; --borde: #222; --morado: #7c3aed; --gris: #888; }
+    :root { --bg: #0d0d0d; --borde: #222; --morado: #7c3aed; --gris: #888; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: var(--bg); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; line-height: 1.7; }
-    header { border-bottom: 1px solid var(--borde); padding: 18px 48px; display: flex; align-items: center; gap: 16px; }
-    header a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; font-weight: 700; }
-    header a span { color: var(--morado); }
+    header { border-bottom: 1px solid var(--borde); padding: 18px 48px; display: flex; align-items: center; justify-content: space-between; }
+    header a.brand { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; font-weight: 700; }
+    header a.brand span { color: var(--morado); }
+    .btn-lang { background: transparent; border: 1px solid var(--borde); color: var(--gris); padding: 5px 14px; border-radius: 20px; cursor: pointer; font-size: 0.82rem; }
+    .btn-lang:hover { color: #fff; border-color: #555; }
     main { max-width: 760px; margin: 0 auto; padding: 48px 24px 80px; }
     h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
     .fecha { color: var(--gris); font-size: 0.85rem; margin-bottom: 36px; }
@@ -26,55 +28,102 @@
 </head>
 <body>
   <header>
-    <a href="/"><span style="color:#e0e0e0">Clips</span><span>ToYou</span></a>
+    <a class="brand" href="/"><span style="color:#e0e0e0">Clips</span><span>ToYou</span></a>
+    <button class="btn-lang" onclick="toggleLang()">EN</button>
   </header>
   <main>
-    <h1>Política de privacidad</h1>
-    <p class="fecha">Última actualización: 4 de julio de 2025</p>
 
-    <h2>1. Responsable del tratamiento</h2>
-    <p>El responsable del tratamiento de datos es ClipsToYou (contacto: <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>).</p>
+    <!-- ESPAÑOL -->
+    <div id="es">
+      <h1>Política de privacidad</h1>
+      <p class="fecha">Última actualización: 4 de julio de 2025</p>
+      <h2>1. Responsable del tratamiento</h2>
+      <p>El responsable del tratamiento de datos es ClipsToYou (contacto: <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>).</p>
+      <h2>2. Datos que recopilamos</h2>
+      <p>Cuando te registras o inicias sesión con Google, recibimos y almacenamos:</p>
+      <ul>
+        <li>Nombre y dirección de correo electrónico de tu cuenta de Google</li>
+        <li>Identificador único de tu cuenta de Google</li>
+      </ul>
+      <p>Adicionalmente, registramos internamente el número de usos diarios del servicio para gestionar el plan contratado.</p>
+      <h2>3. Datos de pago</h2>
+      <p>Los pagos se procesan a través de <strong>Stripe</strong>. ClipsToYou no almacena ni tiene acceso a tus datos de tarjeta. Stripe actúa como procesador de pagos y su política de privacidad está disponible en <a href="https://stripe.com/es/privacy" target="_blank" rel="noopener">stripe.com/es/privacy</a>.</p>
+      <h2>4. Archivos de video</h2>
+      <p>Los videos que subes o que generamos para ti se almacenan temporalmente en nuestros servidores (máximo 30 minutos) con el único fin de procesarlos y entregarte el resultado. Tras ese período se eliminan automáticamente y no se conserva ninguna copia.</p>
+      <h2>5. Finalidad y base legal</h2>
+      <p>Tratamos tus datos para:</p>
+      <ul>
+        <li>Prestarte el servicio (base legal: ejecución de un contrato)</li>
+        <li>Gestionar tu suscripción y facturación (base legal: ejecución de un contrato)</li>
+        <li>Cumplir con obligaciones legales (base legal: cumplimiento legal)</li>
+      </ul>
+      <h2>6. Conservación de datos</h2>
+      <p>Conservamos tu cuenta y datos asociados mientras mantengas una cuenta activa en ClipsToYou. Puedes solicitar la eliminación en cualquier momento escribiéndonos.</p>
+      <h2>7. Tus derechos</h2>
+      <p>Tienes derecho a acceder, rectificar, suprimir, limitar el tratamiento y portabilidad de tus datos. Para ejercerlos, contacta con nosotros en <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>.</p>
+      <h2>8. Proveedores de servicios</h2>
+      <p>Usamos los siguientes proveedores que pueden tratar datos en tu nombre:</p>
+      <ul>
+        <li><strong>Google OAuth</strong> — autenticación de usuarios</li>
+        <li><strong>Supabase</strong> — base de datos de usuarios</li>
+        <li><strong>Stripe</strong> — procesamiento de pagos</li>
+        <li><strong>Railway</strong> — infraestructura de servidores</li>
+      </ul>
+      <h2>9. Contacto</h2>
+      <p>Para cualquier consulta sobre privacidad escríbenos a <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>.</p>
+    </div>
 
-    <h2>2. Datos que recopilamos</h2>
-    <p>Cuando te registras o inicias sesión con Google, recibimos y almacenamos:</p>
-    <ul>
-      <li>Nombre y dirección de correo electrónico de tu cuenta de Google</li>
-      <li>Identificador único de tu cuenta de Google</li>
-    </ul>
-    <p>Adicionalmente, registramos internamente el número de usos diarios del servicio para gestionar el plan contratado.</p>
+    <!-- ENGLISH -->
+    <div id="en" style="display:none">
+      <h1>Privacy policy</h1>
+      <p class="fecha">Last updated: July 4, 2025</p>
+      <h2>1. Data controller</h2>
+      <p>The data controller is ClipsToYou (contact: <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>).</p>
+      <h2>2. Data we collect</h2>
+      <p>When you register or log in with Google, we receive and store:</p>
+      <ul>
+        <li>Your name and email address from your Google account</li>
+        <li>Your unique Google account identifier</li>
+      </ul>
+      <p>We also internally track the number of daily service uses to manage your plan.</p>
+      <h2>3. Payment data</h2>
+      <p>Payments are processed through <strong>Stripe</strong>. ClipsToYou does not store or access your card details. Stripe acts as payment processor and its privacy policy is available at <a href="https://stripe.com/privacy" target="_blank" rel="noopener">stripe.com/privacy</a>.</p>
+      <h2>4. Video files</h2>
+      <p>Videos you upload or that we generate for you are stored temporarily on our servers (maximum 30 minutes) solely for processing and delivering the result to you. After that period they are automatically deleted and no copy is retained.</p>
+      <h2>5. Purpose and legal basis</h2>
+      <p>We process your data to:</p>
+      <ul>
+        <li>Provide the service (legal basis: performance of a contract)</li>
+        <li>Manage your subscription and billing (legal basis: performance of a contract)</li>
+        <li>Comply with legal obligations (legal basis: legal compliance)</li>
+      </ul>
+      <h2>6. Data retention</h2>
+      <p>We retain your account and associated data for as long as you maintain an active account at ClipsToYou. You may request deletion at any time by contacting us.</p>
+      <h2>7. Your rights</h2>
+      <p>You have the right to access, rectify, erase, restrict processing, and port your data. To exercise these rights, contact us at <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>.</p>
+      <h2>8. Service providers</h2>
+      <p>We use the following providers who may process data on your behalf:</p>
+      <ul>
+        <li><strong>Google OAuth</strong> — user authentication</li>
+        <li><strong>Supabase</strong> — user database</li>
+        <li><strong>Stripe</strong> — payment processing</li>
+        <li><strong>Railway</strong> — server infrastructure</li>
+      </ul>
+      <h2>9. Contact</h2>
+      <p>For any privacy-related questions, write to us at <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>.</p>
+    </div>
 
-    <h2>3. Datos de pago</h2>
-    <p>Los pagos se procesan a través de <strong>Stripe</strong>. ClipsToYou no almacena ni tiene acceso a tus datos de tarjeta. Stripe actúa como procesador de pagos y su política de privacidad está disponible en <a href="https://stripe.com/es/privacy" target="_blank" rel="noopener">stripe.com/es/privacy</a>.</p>
-
-    <h2>4. Archivos de video</h2>
-    <p>Los videos que subes o que generamos para ti se almacenan temporalmente en nuestros servidores (máximo 30 minutos) con el único fin de procesarlos y entregarte el resultado. Tras ese período se eliminan automáticamente y no se conserva ninguna copia.</p>
-
-    <h2>5. Finalidad y base legal</h2>
-    <p>Tratamos tus datos para:</p>
-    <ul>
-      <li>Prestarte el servicio (base legal: ejecución de un contrato)</li>
-      <li>Gestionar tu suscripción y facturación (base legal: ejecución de un contrato)</li>
-      <li>Cumplir con obligaciones legales (base legal: cumplimiento legal)</li>
-    </ul>
-
-    <h2>6. Conservación de datos</h2>
-    <p>Conservamos tu cuenta y datos asociados mientras mantengas una cuenta activa en ClipsToYou. Puedes solicitar la eliminación en cualquier momento escribiéndonos.</p>
-
-    <h2>7. Tus derechos</h2>
-    <p>Tienes derecho a acceder, rectificar, suprimir, limitar el tratamiento y portabilidad de tus datos. Para ejercerlos, contacta con nosotros en <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>.</p>
-
-    <h2>8. Proveedores de servicios</h2>
-    <p>Usamos los siguientes proveedores que pueden tratar datos en tu nombre:</p>
-    <ul>
-      <li><strong>Google OAuth</strong> — autenticación de usuarios</li>
-      <li><strong>Supabase</strong> — base de datos de usuarios</li>
-      <li><strong>Stripe</strong> — procesamiento de pagos</li>
-      <li><strong>Railway</strong> — infraestructura de servidores</li>
-    </ul>
-
-    <h2>9. Contacto</h2>
-    <p>Para cualquier consulta sobre privacidad escríbenos a <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>.</p>
   </main>
-  <footer>© 2025 ClipsToYou — <a href="/">Volver al inicio</a></footer>
+  <footer>© 2025 ClipsToYou — <a href="/">Volver al inicio / Back to home</a></footer>
+  <script>
+    var lang = 'es';
+    function toggleLang() {
+      lang = lang === 'es' ? 'en' : 'es';
+      document.getElementById('es').style.display = lang === 'es' ? '' : 'none';
+      document.getElementById('en').style.display = lang === 'en' ? '' : 'none';
+      document.querySelector('.btn-lang').textContent = lang === 'es' ? 'EN' : 'ES';
+      document.documentElement.lang = lang;
+    }
+  </script>
 </body>
 </html>

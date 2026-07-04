@@ -1146,6 +1146,7 @@
         cf3Titulo: 'Descarga todo', cf3Desc: 'Recibes un ZIP con todas las partes ordenadas y listas.',
         footerDesc: 'Herramienta gratuita para dividir videos',
         footerTerminos: 'Términos y condiciones', footerPrivacidad: 'Política de privacidad', footerCookies: 'Política de cookies', footerContacto: 'Contacto',
+        cookieMsg: 'Usamos cookies esenciales para mantener tu sesión iniciada. Sin ellas el inicio de sesión no funciona.', cookieMas: 'Más info', cookieOk: 'Entendido ✓',
         preciosTitulo: 'Planes y precios', preciosSub: 'Empieza gratis, actualiza cuando quieras',
         planPer: '/mes', planFreeDesc: 'Para probar sin compromiso', planProDesc: 'Para creadores de contenido',
         planProBadge: '✨ Más popular', btnFree: 'Empezar gratis', btnPro: '⚡ Suscribirse — 4,99€/mes',
@@ -1189,6 +1190,7 @@
         cf3Titulo: 'Download all', cf3Desc: 'You get a ZIP with all parts sorted and ready.',
         footerDesc: 'Free tool to split videos',
         footerTerminos: 'Terms & conditions', footerPrivacidad: 'Privacy policy', footerCookies: 'Cookie policy', footerContacto: 'Contact',
+        cookieMsg: 'We use essential cookies to keep your session active. Without them, login will not work.', cookieMas: 'Learn more', cookieOk: 'Got it ✓',
         preciosTitulo: 'Plans & pricing', preciosSub: 'Start free, upgrade anytime',
         planPer: '/mo', planFreeDesc: 'Try it with no commitment', planProDesc: 'For content creators',
         planProBadge: '✨ Most popular', btnFree: 'Get started free', btnPro: '⚡ Subscribe — €4.99/mo',
@@ -2531,10 +2533,10 @@
     justify-content:space-between; gap:16px; flex-wrap:wrap;
   ">
     <p style="color:#bbb; font-size:0.82rem; margin:0; max-width:700px;">
-      🍪 <span id="cookieMsg">Usamos cookies esenciales para mantener tu sesión iniciada. Sin ellas el inicio de sesión no funciona.</span>
-      <a id="cookieLinkMore" href="/cookies" style="color:#7c3aed; margin-left:6px;">Más info</a>
+      🍪 <span data-i18n="cookieMsg">Usamos cookies esenciales para mantener tu sesión iniciada. Sin ellas el inicio de sesión no funciona.</span>
+      <a href="/cookies" data-i18n="cookieMas" style="color:#7c3aed; margin-left:6px;">Más info</a>
     </p>
-    <button id="cookieAceptar" style="
+    <button id="cookieAceptar" data-i18n="cookieOk" style="
       background:#7c3aed; color:#fff; border:none; border-radius:8px;
       padding:8px 20px; font-size:0.85rem; font-weight:600; cursor:pointer; white-space:nowrap;
     ">Entendido ✓</button>
@@ -2542,18 +2544,10 @@
   <script>
     (function() {
       if (!localStorage.getItem('cookies_ok')) {
-        const banner = document.getElementById('cookieBanner');
-        banner.style.display = 'flex';
-        // Traducción según idioma
-        const lang = document.documentElement.lang || navigator.language || 'es';
-        if (lang.startsWith('en')) {
-          document.getElementById('cookieMsg').textContent = 'We use essential cookies to keep your session active. Without them, login will not work.';
-          document.getElementById('cookieLinkMore').textContent = 'Learn more';
-          document.getElementById('cookieAceptar').textContent = 'Got it ✓';
-        }
+        document.getElementById('cookieBanner').style.display = 'flex';
         document.getElementById('cookieAceptar').addEventListener('click', function() {
           localStorage.setItem('cookies_ok', '1');
-          banner.style.display = 'none';
+          document.getElementById('cookieBanner').style.display = 'none';
         });
       }
     })();

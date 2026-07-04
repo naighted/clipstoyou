@@ -7,12 +7,14 @@
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/favicon.png">
   <style>
-    :root { --bg: #0d0d0d; --card: #111; --borde: #222; --morado: #7c3aed; --gris: #888; }
+    :root { --bg: #0d0d0d; --borde: #222; --morado: #7c3aed; --gris: #888; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
     body { background: var(--bg); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; line-height: 1.7; }
-    header { border-bottom: 1px solid var(--borde); padding: 18px 48px; display: flex; align-items: center; gap: 16px; }
-    header a { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; font-weight: 700; }
-    header a span { color: var(--morado); }
+    header { border-bottom: 1px solid var(--borde); padding: 18px 48px; display: flex; align-items: center; justify-content: space-between; }
+    header a.brand { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; font-weight: 700; }
+    header a.brand span { color: var(--morado); }
+    .btn-lang { background: transparent; border: 1px solid var(--borde); color: var(--gris); padding: 5px 14px; border-radius: 20px; cursor: pointer; font-size: 0.82rem; }
+    .btn-lang:hover { color: #fff; border-color: #555; }
     main { max-width: 760px; margin: 0 auto; padding: 48px 24px 80px; }
     h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
     .fecha { color: var(--gris); font-size: 0.85rem; margin-bottom: 36px; }
@@ -26,46 +28,86 @@
 </head>
 <body>
   <header>
-    <a href="/"><span style="color:#e0e0e0">Clips</span><span>ToYou</span></a>
+    <a class="brand" href="/"><span style="color:#e0e0e0">Clips</span><span>ToYou</span></a>
+    <button class="btn-lang" onclick="toggleLang()">EN</button>
   </header>
   <main>
-    <h1>Términos y condiciones</h1>
-    <p class="fecha">Última actualización: 4 de julio de 2025</p>
 
-    <h2>1. Aceptación de los términos</h2>
-    <p>Al acceder y usar ClipsToYou (www.clipstoyou.com), aceptas estos términos y condiciones en su totalidad. Si no estás de acuerdo con alguna parte, no uses el servicio.</p>
+    <!-- ESPAÑOL -->
+    <div id="es">
+      <h1>Términos y condiciones</h1>
+      <p class="fecha">Última actualización: 4 de julio de 2025</p>
+      <h2>1. Aceptación de los términos</h2>
+      <p>Al acceder y usar ClipsToYou (www.clipstoyou.com), aceptas estos términos y condiciones en su totalidad. Si no estás de acuerdo con alguna parte, no uses el servicio.</p>
+      <h2>2. Descripción del servicio</h2>
+      <p>ClipsToYou es una herramienta web que permite:</p>
+      <ul>
+        <li>Dividir videos en partes de igual duración</li>
+        <li>Convertir videos al formato vertical 9:16 (con o sin webcam, con fondo desenfocado)</li>
+      </ul>
+      <p>El servicio está disponible en versión gratuita (con límite de usos diarios) y en planes de pago.</p>
+      <h2>3. Uso aceptable</h2>
+      <p>Te comprometes a usar el servicio únicamente con contenido del que seas titular o tengas los derechos necesarios. Queda prohibido subir contenido:</p>
+      <ul>
+        <li>Protegido por derechos de autor sin autorización</li>
+        <li>Ilegal, ofensivo, violento o que incite al odio</li>
+        <li>Que vulnere la privacidad de terceros</li>
+      </ul>
+      <h2>4. Almacenamiento de archivos</h2>
+      <p>Los videos subidos o procesados se almacenan temporalmente en nuestros servidores durante un máximo de 30 minutos y se eliminan automáticamente. No guardamos tus videos a largo plazo ni los compartimos con terceros.</p>
+      <h2>5. Planes de pago</h2>
+      <p>Los planes de pago (Pro, Pro Max) se facturan mensualmente a través de Stripe. Puedes cancelar en cualquier momento desde tu área de usuario. No se realizan reembolsos por períodos ya comenzados salvo cuando lo exija la ley aplicable.</p>
+      <h2>6. Limitación de responsabilidad</h2>
+      <p>ClipsToYou se ofrece "tal cual". No garantizamos disponibilidad ininterrumpida ni la idoneidad del servicio para un fin concreto. No nos hacemos responsables de pérdidas de datos ni de daños derivados del uso del servicio.</p>
+      <h2>7. Modificaciones</h2>
+      <p>Podemos actualizar estos términos en cualquier momento. Te notificaremos cambios significativos. El uso continuado del servicio tras la publicación de cambios implica tu aceptación.</p>
+      <h2>8. Contacto</h2>
+      <p>Para cualquier consulta relacionada con estos términos, escríbenos a <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>.</p>
+    </div>
 
-    <h2>2. Descripción del servicio</h2>
-    <p>ClipsToYou es una herramienta web que permite:</p>
-    <ul>
-      <li>Dividir videos en partes de igual duración</li>
-      <li>Convertir videos al formato vertical 9:16 (con o sin webcam, con fondo desenfocado)</li>
-    </ul>
-    <p>El servicio está disponible en versión gratuita (con límite de usos diarios) y en planes de pago.</p>
+    <!-- ENGLISH -->
+    <div id="en" style="display:none">
+      <h1>Terms and conditions</h1>
+      <p class="fecha">Last updated: July 4, 2025</p>
+      <h2>1. Acceptance of terms</h2>
+      <p>By accessing and using ClipsToYou (www.clipstoyou.com), you fully accept these terms and conditions. If you disagree with any part, please do not use the service.</p>
+      <h2>2. Description of service</h2>
+      <p>ClipsToYou is a web tool that allows you to:</p>
+      <ul>
+        <li>Split videos into equal-length parts</li>
+        <li>Convert videos to vertical 9:16 format (with or without webcam, with blurred background)</li>
+      </ul>
+      <p>The service is available in a free tier (with daily usage limits) and paid plans.</p>
+      <h2>3. Acceptable use</h2>
+      <p>You agree to use the service only with content you own or have the necessary rights to. It is prohibited to upload content that is:</p>
+      <ul>
+        <li>Copyrighted without authorization</li>
+        <li>Illegal, offensive, violent, or hateful</li>
+        <li>Violating the privacy of third parties</li>
+      </ul>
+      <h2>4. File storage</h2>
+      <p>Uploaded or processed videos are stored temporarily on our servers for a maximum of 30 minutes and are then automatically deleted. We do not store your videos long-term or share them with third parties.</p>
+      <h2>5. Paid plans</h2>
+      <p>Paid plans (Pro, Pro Max) are billed monthly through Stripe. You can cancel at any time from your user area. No refunds are issued for periods already started, except where required by applicable law.</p>
+      <h2>6. Limitation of liability</h2>
+      <p>ClipsToYou is provided "as is". We do not guarantee uninterrupted availability or fitness for a particular purpose. We are not liable for data loss or damages arising from use of the service.</p>
+      <h2>7. Changes</h2>
+      <p>We may update these terms at any time. We will notify you of significant changes. Continued use of the service after changes are published constitutes your acceptance.</p>
+      <h2>8. Contact</h2>
+      <p>For any questions about these terms, contact us at <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>.</p>
+    </div>
 
-    <h2>3. Uso aceptable</h2>
-    <p>Te comprometes a usar el servicio únicamente con contenido del que seas titular o tengas los derechos necesarios. Queda prohibido subir contenido:</p>
-    <ul>
-      <li>Protegido por derechos de autor sin autorización</li>
-      <li>Ilegal, ofensivo, violento o que incite al odio</li>
-      <li>Que vulnere la privacidad de terceros</li>
-    </ul>
-
-    <h2>4. Almacenamiento de archivos</h2>
-    <p>Los videos subidos o procesados se almacenan temporalmente en nuestros servidores durante un máximo de 30 minutos y se eliminan automáticamente. No guardamos tus videos a largo plazo ni los compartimos con terceros.</p>
-
-    <h2>5. Planes de pago</h2>
-    <p>Los planes de pago (Pro, Pro Max) se facturan mensualmente a través de Stripe. Puedes cancelar en cualquier momento desde tu área de usuario. No se realizan reembolsos por períodos ya comenzados salvo cuando lo exija la ley aplicable.</p>
-
-    <h2>6. Limitación de responsabilidad</h2>
-    <p>ClipsToYou se ofrece "tal cual". No garantizamos disponibilidad ininterrumpida ni la idoneidad del servicio para un fin concreto. No nos hacemos responsables de pérdidas de datos ni de daños derivados del uso del servicio.</p>
-
-    <h2>7. Modificaciones</h2>
-    <p>Podemos actualizar estos términos en cualquier momento. Te notificaremos cambios significativos. El uso continuado del servicio tras la publicación de cambios implica tu aceptación.</p>
-
-    <h2>8. Contacto</h2>
-    <p>Para cualquier consulta relacionada con estos términos, escríbenos a <a href="mailto:soporte@clipstoyou.com">soporte@clipstoyou.com</a>.</p>
   </main>
-  <footer>© 2025 ClipsToYou — <a href="/">Volver al inicio</a></footer>
+  <footer>© 2025 ClipsToYou — <a href="/">Volver al inicio / Back to home</a></footer>
+  <script>
+    var lang = 'es';
+    function toggleLang() {
+      lang = lang === 'es' ? 'en' : 'es';
+      document.getElementById('es').style.display = lang === 'es' ? '' : 'none';
+      document.getElementById('en').style.display = lang === 'en' ? '' : 'none';
+      document.querySelector('.btn-lang').textContent = lang === 'es' ? 'EN' : 'ES';
+      document.documentElement.lang = lang;
+    }
+  </script>
 </body>
 </html>
