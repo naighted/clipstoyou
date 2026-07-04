@@ -417,13 +417,15 @@ app.get('/api/job916/:jobId', (req, res) => {
 
 app.get('/api/job916/:jobId/download', (req, res) => {
   const job = jobs916.get(req.params.jobId);
-  if (!job || job.status !== 'done' || !job.outputFile) return res.status(404).json({ error: 'No disponible' });
+  if (!job || job.status !== 'done' || !job.outputFile || !fs.existsSync(job.outputFile)) {
+    return res.status(404).json({ error: 'No disponible' });
+  }
   const nombreDescarga = (job.nombreOriginal || 'video') + '_9_16.mp4';
   res.setHeader('Content-Type', 'video/mp4');
   res.setHeader('Content-Disposition', `attachment; filename="video_9_16.mp4"; filename*=UTF-8''${encodeURIComponent(nombreDescarga)}`);
   const stream = fs.createReadStream(job.outputFile);
+  stream.on('error', () => res.destroy());
   stream.pipe(res);
-  // File stays until the 30-min cleanup timer removes it (supports multiple downloads)
 });
 
 app.post('/dividir', upload.single('video'), async (req, res) => {
@@ -499,7 +501,7 @@ app.post('/dividir', upload.single('video'), async (req, res) => {
 });
 
 // ─── DIVIDIR DIRECTAMENTE DESDE UN JOB 9:16 (sin resubir el video) ──────────
-app.post('/dividir-desde-916/:jobId', async (req, res) => {
+app.post('/dividir-desde-916/:jobId', express.json(), async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Debes iniciar sesión.' });
   const job = jobs916.get(req.params.jobId);
   if (!job || job.status !== 'done' || !job.outputFile || !fs.existsSync(job.outputFile)) {
