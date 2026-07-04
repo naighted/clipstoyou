@@ -498,5 +498,74 @@ app.post('/dividir', upload.single('video'), async (req, res) => {
   });
 });
 
+// ─── DIVIDIR DIRECTAMENTE DESDE UN JOB 9:16 (sin resubir el video) ──────────
+app.post('/dividir-desde-916/:jobId', async (req, res) => {
+  if (!req.user) return res.status(401).json({ error: 'Debes iniciar sesión.' });
+  const job = jobs916.get(req.params.jobId);
+  if (!job || job.status !== 'done' || !job.outputFile || !fs.existsSync(job.outputFile)) {
+    return res.status(404).json({ error: 'El video convertido ya no está disponible (expiró).' });
+  }
+
+  const hoy = new Date().toISOString().split('T')[0];
+  let usos = req.user.usos_hoy || 0;
+  if (req.user.ultimo_reset !== hoy) {
+    usos = 0;
+    await supabase.from('usuarios').update({ usos_hoy: 0, ultimo_reset: hoy }).eq('id', req.user.id);
+  }
+  const esAdmin = req.user.email === ADMIN_EMAIL;
+  if (!esAdmin && req.user.plan === 'free' && usos >= LIMITE_DIARIO) {
+    return res.status(429).json({ error: `Has alcanzado el límite de ${LIMITE_DIARIO} videos gratis hoy.` });
+  }
+
+  const duracion = parseInt(req.body.duracion);
+  if (!duracion || duracion < 1) return res.status(400).json({ error: 'Duración inválida.' });
+
+  const inputFile = job.outputFile;
+  const nombreBase = (job.nombreOriginal || 'video') + '_9_16';
+  const outputDir = path.join(os.tmpdir(), 'partes916_' + Date.now());
+  fs.mkdirSync(outputDir);
+  const outputPattern = path.join(outputDir, 'parte_%02d.mp4');
+
+  const args = [
+    '-i', inputFile,
+    '-c', 'copy', '-map', '0',
+    '-segment_time', String(duracion), '-reset_timestamps', '1',
+    '-f', 'segment', outputPattern
+  ];
+
+  const ffmpegProc = spawn(FFMPEG, args);
+  ffmpegProc.on('close', async (code) => {
+    if (code !== 0) {
+      try { fs.rmSync(outputDir, { recursive: true, force: true }); } catch(e) {}
+      return res.status(500).json({ error: 'Error al dividir el video.' });
+    }
+    const partes = fs.readdirSync(outputDir).filter(f => f.endsWith('.mp4')).sort();
+    if (partes.length === 0) {
+      try { fs.rmSync(outputDir, { recursive: true, force: true }); } catch(e) {}
+      return res.status(500).json({ error: 'No se generaron partes.' });
+    }
+
+    if (!esAdmin) {
+      const { data: u } = await supabase.from('usuarios').select('total_usos').eq('id', req.user.id).single();
+      await supabase.from('usuarios').update({
+        usos_hoy: usos + 1, ultimo_reset: hoy,
+        total_usos: (u?.total_usos || 0) + 1
+      }).eq('id', req.user.id);
+    }
+
+    res.setHeader('Content-Type', 'application/zip');
+    res.setHeader('Content-Disposition', 'attachment; filename="partes.zip"');
+    const zip = archiver('zip');
+    zip.pipe(res);
+    partes.forEach((parte, i) => {
+      zip.file(path.join(outputDir, parte), { name: `${nombreBase} - parte ${i + 1}.mp4` });
+    });
+    zip.finalize();
+    zip.on('end', () => {
+      try { fs.rmSync(outputDir, { recursive: true, force: true }); } catch(e) {}
+    });
+  });
+});
+
 const PORT = process.env.PORT || 3000;
 app.listen(PORT, () => console.log(`Servidor listo en http://localhost:${PORT}`));

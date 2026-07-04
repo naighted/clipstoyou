@@ -1207,6 +1207,7 @@
     let archivoActual = null;
     let duracionVideo = null;
     let modoActual = 'duracion'; // 'duracion' | 'partes'
+    let dividirDesde916 = null; // { jobId, nombre } — divide servidor sin subir archivo
 
     const zonaSubida = document.getElementById('zonaSubida');
     const inputArchivo = document.getElementById('inputArchivo');
@@ -1238,7 +1239,7 @@
     inputArchivo.addEventListener('change', () => { if (inputArchivo.files[0]) seleccionar(inputArchivo.files[0]); });
 
     btnCambiar.addEventListener('click', () => {
-      archivoActual = null; duracionVideo = null;
+      archivoActual = null; duracionVideo = null; dividirDesde916 = null;
       zonaSubida.style.display = 'block';
       archivoBox.style.display = 'none';
       partesEstimadas.style.display = 'none';
@@ -1246,6 +1247,7 @@
     });
 
     function seleccionar(archivo) {
+      dividirDesde916 = null;
       archivoActual = archivo;
       archivoNombre.textContent = '📁 ' + archivo.name;
       zonaSubida.style.display = 'none';
@@ -1343,6 +1345,11 @@
 
     // ─── VERIFICAR FORMULARIO ─────────────────────────────────
     function verificar() {
+      if (dividirDesde916) {
+        // Modo servidor: solo permite duración (no conocemos la duración total del video)
+        btnDividir.disabled = !(parseInt(campoDuracion.value) >= 1);
+        return;
+      }
       if (!archivoActual) { btnDividir.disabled = true; return; }
       if (modoActual === 'duracion') {
         btnDividir.disabled = !(parseInt(campoDuracion.value) >= 1);
@@ -1366,6 +1373,13 @@
     btnDividir.addEventListener('click', () => {
       const t = T[idioma];
       const duracion = calcularDuracionSegundos();
+
+      if (dividirDesde916) {
+        if (!duracion || duracion < 1) return;
+        dividirDesde916Con(dividirDesde916.jobId, duracion);
+        return;
+      }
+
       if (!archivoActual || !duracion || duracion < 1) return;
 
       errorBox.style.display = 'none';
@@ -1431,6 +1445,55 @@
       errorBox.style.display = 'block';
       progresoContenedor.style.display = 'none';
       btnDividir.disabled = false;
+    }
+
+    function dividirDesde916Con(jobId, duracion) {
+      const t = T[idioma];
+      errorBox.style.display = 'none';
+      document.getElementById('upgradeBox').style.display = 'none';
+      btnDividir.disabled = true;
+      progresoContenedor.style.display = 'block';
+      barra.style.width = '20%';
+      progresoTexto.textContent = t.dividiendo || 'Dividiendo...';
+
+      fetch('/dividir-desde-916/' + jobId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ duracion })
+      }).then(async resp => {
+        if (resp.status === 401) {
+          mostrarError(idioma === 'es' ? 'Debes iniciar sesión.' : 'You must log in.');
+          cargarUsuario(); return null;
+        }
+        if (resp.status === 429) { mostrarLimiteAlcanzado(); cargarUsuario(); return null; }
+        if (resp.status === 404) {
+          mostrarError(idioma === 'es'
+            ? 'El video ya no está en el servidor (expiró). Descárgalo y súbelo manualmente.'
+            : 'Video no longer on server (expired). Download and upload manually.');
+          return null;
+        }
+        if (!resp.ok) {
+          const d = await resp.json().catch(() => ({}));
+          mostrarError(d.error || t.errorProcesar);
+          return null;
+        }
+        barra.style.width = '90%';
+        return resp.blob();
+      }).then(blob => {
+        if (!blob) return;
+        barra.style.width = '100%';
+        progresoTexto.textContent = t.listo || '✅ Listo';
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url; a.download = 'partes.zip'; a.click();
+        URL.revokeObjectURL(url);
+        cargarUsuario();
+        setTimeout(() => {
+          progresoContenedor.style.display = 'none';
+          barra.style.width = '0%';
+          btnDividir.disabled = false;
+        }, 3000);
+      }).catch(() => mostrarError(t.errorConexion || 'Error de conexión.'));
     }
 
     function mostrarLimiteAlcanzado() {
@@ -2299,32 +2362,28 @@
       if (btn2) { btn2.style.opacity = videoFile916 ? '1' : '0.4'; btn2.style.cursor = videoFile916 ? 'pointer' : 'not-allowed'; }
     }
 
-    async function usarEn916EnDividir() {
+    function usarEn916EnDividir() {
       if (!lastJobId916) return;
       const nombreBase = videoFile916 ? videoFile916.name.replace(/\.[^/.]+$/, '') : 'video';
-      const lang = document.documentElement.lang || 'es';
-      const btnDividir = document.querySelector('[onclick="usarEn916EnDividir()"]');
-      if (btnDividir) { btnDividir.disabled = true; btnDividir.textContent = lang === 'en' ? 'Loading...' : 'Cargando...'; }
-      try {
-        const resp = await fetch('/api/job916/' + lastJobId916 + '/download');
-        if (!resp.ok) {
-          alert(lang === 'en'
-            ? 'File no longer available on server (expired). Download it first and upload manually to the splitter.'
-            : 'El archivo ya no está disponible en el servidor (expiró). Descárgalo primero y súbelo manualmente al divisor.');
-          return;
-        }
-        const blob = await resp.blob();
-        const file = new File([blob], nombreBase + '_9_16.mp4', { type: 'video/mp4' });
-        cambiarTab('dividir');
-        const dt = new DataTransfer();
-        dt.items.add(file);
-        document.getElementById('inputArchivo').files = dt.files;
-        document.getElementById('inputArchivo').dispatchEvent(new Event('change'));
-      } catch(e) {
-        alert(lang === 'en' ? 'Error loading file.' : 'Error al cargar el archivo.');
-      } finally {
-        if (btnDividir) { btnDividir.disabled = false; btnDividir.innerHTML = '✂️ Dividir en partes'; }
-      }
+      const nombre = nombreBase + '_9_16.mp4';
+
+      // Guardar referencia al job para dividir en servidor (sin descargar/resubir el video)
+      dividirDesde916 = { jobId: lastJobId916, nombre };
+      archivoActual = { name: nombre }; // centinela — no es un File real
+      duracionVideo = null;
+      archivoNombre.textContent = '📁 ' + nombre;
+      zonaSubida.style.display = 'none';
+      archivoBox.style.display = 'block';
+
+      // Forzar modo duración (no podemos calcular "por partes" sin conocer la duración)
+      modoActual = 'duracion';
+      btnModoDuracion.classList.add('activo');
+      btnModoPartes.classList.remove('activo');
+      seccionDuracion.style.display = 'block';
+      seccionPartes.style.display = 'none';
+
+      cambiarTab('dividir');
+      verificar();
     }
 
     // Mostrar mensaje si vuelve de pago
