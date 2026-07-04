@@ -1819,11 +1819,15 @@
     const MAX_DURACION_MIN = 60;
 
     function cargarFrame916(file) {
+      // Release previous output blob and canvas data BEFORE loading new video
+      blob916 = null;
+      frameImgData = null;
+
       const url = URL.createObjectURL(file);
       const vid = document.createElement('video');
-      vid.src = url;
-      vid.preload = 'metadata';
+      vid.preload = 'metadata'; // Must be set BEFORE src to prevent full buffering
       vid.muted = true;
+      vid.src = url;
 
       vid.addEventListener('loadedmetadata', () => {
         if (vid.duration > MAX_DURACION_MIN * 60) {
@@ -1842,7 +1846,7 @@
           zonaSubida916.style.display = 'flex';
           return;
         }
-        vid.currentTime = 1;
+        vid.currentTime = 0.01; // Seek to near start — minimal data needed
       });
 
       vid.addEventListener('seeked', () => {
@@ -1856,9 +1860,8 @@
         ctx916.drawImage(vid, 0, 0, previewW, previewH);
         frameImgData = ctx916.getImageData(0, 0, previewW, previewH);
         URL.revokeObjectURL(url);
-        vid.src = '';
+        vid.removeAttribute('src');
         vid.load();
-        if (blob916) { blob916 = null; }
         zonaCam = null;
         ventanaGameplay = null;
         candidatoGameplay = null;
@@ -1896,8 +1899,6 @@
           document.getElementById('conCamNombreArchivo').textContent = file.name;
         }
       });
-
-      vid.load();
     }
 
     function setPresetCam(pos) {
