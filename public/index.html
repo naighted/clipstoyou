@@ -2521,5 +2521,42 @@
     }
     document.getElementById('modalSug').addEventListener('click', e => { if (e.target === document.getElementById('modalSug')) cerrarSugerencia(); });
   </script>
+
+  <!-- BANNER COOKIES -->
+  <div id="cookieBanner" style="
+    display:none;
+    position:fixed; bottom:0; left:0; right:0; z-index:9999;
+    background:#111; border-top:1px solid #2a2a2a;
+    padding:14px 24px; display:flex; align-items:center;
+    justify-content:space-between; gap:16px; flex-wrap:wrap;
+  ">
+    <p style="color:#bbb; font-size:0.82rem; margin:0; max-width:700px;">
+      🍪 <span id="cookieMsg">Usamos cookies esenciales para mantener tu sesión iniciada. Sin ellas el inicio de sesión no funciona.</span>
+      <a id="cookieLinkMore" href="/cookies" style="color:#7c3aed; margin-left:6px;">Más info</a>
+    </p>
+    <button id="cookieAceptar" style="
+      background:#7c3aed; color:#fff; border:none; border-radius:8px;
+      padding:8px 20px; font-size:0.85rem; font-weight:600; cursor:pointer; white-space:nowrap;
+    ">Entendido ✓</button>
+  </div>
+  <script>
+    (function() {
+      if (!localStorage.getItem('cookies_ok')) {
+        const banner = document.getElementById('cookieBanner');
+        banner.style.display = 'flex';
+        // Traducción según idioma
+        const lang = document.documentElement.lang || navigator.language || 'es';
+        if (lang.startsWith('en')) {
+          document.getElementById('cookieMsg').textContent = 'We use essential cookies to keep your session active. Without them, login will not work.';
+          document.getElementById('cookieLinkMore').textContent = 'Learn more';
+          document.getElementById('cookieAceptar').textContent = 'Got it ✓';
+        }
+        document.getElementById('cookieAceptar').addEventListener('click', function() {
+          localStorage.setItem('cookies_ok', '1');
+          banner.style.display = 'none';
+        });
+      }
+    })();
+  </script>
 </body>
 </html>
