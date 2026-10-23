@@ -666,7 +666,8 @@ app.post('/dividir-desde-916/:jobId', express.json(), async (req, res) => {
   if (!duracion || duracion < 1) return res.status(400).json({ error: 'Duración inválida.' });
 
   const inputFile = job.outputFile;
-  const nombreBase = (job.nombreOriginal || 'video') + '_9_16';
+  // API clips keep the original title ("<name> - parte N"); the web keeps its "_9_16" marker.
+  const nombreBase = (job.nombreOriginal || 'video') + (req.viaApiKey ? '' : '_9_16');
   const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'partes916_'));
   const outputPattern = path.join(outputDir, 'parte_%02d.mp4');
 
