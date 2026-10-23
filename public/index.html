@@ -778,6 +778,7 @@
     <div class="logo">Clips<span>ToYou</span></div>
     <div class="header-right">
       <a href="#precios" data-i18n="linkPrecios" style="color:var(--gris);font-size:0.85rem;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--gris)'">Precios</a>
+      <a href="/api-docs" style="color:var(--gris);font-size:0.85rem;text-decoration:none;transition:color 0.2s;" onmouseover="this.style.color='#fff'" onmouseout="this.style.color='var(--gris)'">API</a>
       <button class="btn-idioma" id="btnIdioma">EN</button>
       <div id="headerAuth">
         <a href="/auth/google" class="btn-login">
@@ -1042,6 +1043,7 @@
           <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="freeF4">2 conversiones 9:16 de prueba</span></div>
           <div class="plan-feat off"><span class="ic">❌</span> <span data-i18n="freeLim1">Sin límite diario</span></div>
           <div class="plan-feat off"><span class="ic">❌</span> <span data-i18n="freeLim2">Convertidor 9:16 ilimitado</span></div>
+          <div class="plan-feat off"><span class="ic">❌</span> <span data-i18n="featApi">API para Claude y ChatGPT</span></div>
         </div>
         <button class="btn-plan btn-plan-free" data-i18n="btnFreeStart" onclick="window.scrollTo({top:0,behavior:'smooth'})">Empezar gratis</button>
       </div>
@@ -1059,6 +1061,7 @@
           <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="proF2">Archivos hasta 4 GB</span></div>
           <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="proF3">ZIP con todas las partes</span></div>
           <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="proF4">7 conversiones 9:16 por semana</span></div>
+          <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="featApi">API para Claude y ChatGPT</span></div>
           <div class="plan-feat"><span class="ic">✅</span> <span data-i18n="proF5">Acceso anticipado a novedades</span></div>
           <div class="plan-feat off"><span class="ic">❌</span> <span data-i18n="freeLim2">Convertidor 9:16 ilimitado</span></div>
         </div>
@@ -1158,7 +1161,7 @@
         freeDesc: 'Para probar sin compromiso', freeF1: '3 divisiones de video al día', freeF2: 'Archivos hasta 4 GB', freeF3: 'ZIP con todas las partes', freeF4: '2 conversiones 9:16 de prueba', freeLim1: 'Sin límite diario', freeLim2: 'Convertidor 9:16 ilimitado', btnFreeStart: 'Empezar gratis',
         ofertaTag: '🏷️ Oferta de lanzamiento',
         plazasTexto: '🔥 Precio especial para los 100 primeros usuarios',
-        proBadge: '✨ Más popular', proDesc: 'Para streamers y creadores', proF1: 'Divisiones de video ilimitadas', proF2: 'Archivos hasta 4 GB', proF3: 'ZIP con todas las partes', proF4: '7 conversiones 9:16 por semana', proF5: 'Acceso anticipado a novedades', btnProSub: '⚡ Suscribirse — 4,99€/mes',
+        proBadge: '✨ Más popular', proDesc: 'Para streamers y creadores', proF1: 'Divisiones de video ilimitadas', proF2: 'Archivos hasta 4 GB', proF3: 'ZIP con todas las partes', proF4: '7 conversiones 9:16 por semana', proF5: 'Acceso anticipado a novedades', featApi: 'API para Claude y ChatGPT', btnProSub: '⚡ Suscribirse — 4,99€/mes',
         promaxBadge: '🚀 Pro Max', promaxDesc: 'Para creadores que publican a diario', promaxF1: 'Todo lo de Pro', promaxF2: 'Conversiones 9:16 <strong>ilimitadas</strong>', promaxF3: 'Acceso anticipado a novedades', btnPromaxSub: '🚀 Suscribirse — 9,99€/mes',
         camInstruccion: '📌 Dibuja un rectángulo sobre <strong style="color:#fff">tu cámara/webcam</strong>. El gameplay se detecta automáticamente.',
         camPresets: 'O elige una posición predefinida:', presetBL: '↙ Abajo izq', presetBR: '↘ Abajo der', presetTL: '↖ Arriba izq', presetTR: '↗ Arriba der',
@@ -1202,7 +1205,7 @@
         freeDesc: 'Try it with no commitment', freeF1: '3 video splits per day', freeF2: 'Files up to 4 GB', freeF3: 'ZIP with all parts', freeF4: '2 trial 9:16 conversions', freeLim1: 'No daily limit', freeLim2: 'Unlimited 9:16 converter', btnFreeStart: 'Get started free',
         ofertaTag: '🏷️ Launch offer',
         plazasTexto: '🔥 Special price for the first 100 users',
-        proBadge: '✨ Most popular', proDesc: 'For streamers and creators', proF1: 'Unlimited video splits', proF2: 'Files up to 4 GB', proF3: 'ZIP with all parts', proF4: '7 9:16 conversions per week', proF5: 'Early access to new features', btnProSub: '⚡ Subscribe — €4.99/mo',
+        proBadge: '✨ Most popular', proDesc: 'For streamers and creators', proF1: 'Unlimited video splits', proF2: 'Files up to 4 GB', proF3: 'ZIP with all parts', proF4: '7 9:16 conversions per week', proF5: 'Early access to new features', featApi: 'API for Claude and ChatGPT', btnProSub: '⚡ Subscribe — €4.99/mo',
         promaxBadge: '🚀 Pro Max', promaxDesc: 'For creators who publish daily', promaxF1: 'Everything in Pro', promaxF2: '<strong>Unlimited</strong> 9:16 conversions', promaxF3: 'Early access to new features', btnPromaxSub: '🚀 Subscribe — €9.99/mo',
         camInstruccion: '📌 Draw a rectangle over <strong style="color:#fff">your camera/webcam</strong>. Gameplay is detected automatically.',
         camPresets: 'Or choose a preset position:', presetBL: '↙ Bottom left', presetBR: '↘ Bottom right', presetTL: '↖ Top left', presetTR: '↗ Top right',
@@ -1418,6 +1421,22 @@
       }
     }
 
+    function descargarPartes(data) {
+      if (!data || typeof data.downloadUrl !== 'string' ||
+          !data.downloadUrl.startsWith('/descargas-partes/')) {
+        mostrarError(T[idioma].errorProcesar);
+        return false;
+      }
+      // Native download: never buffer a large ZIP as an XHR/fetch Blob.
+      const a = document.createElement('a');
+      a.href = data.downloadUrl;
+      a.download = 'partes.zip';
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      return true;
+    }
+
     // ─── DIVIDIR ─────────────────────────────────────────────
     btnDividir.addEventListener('click', () => {
       const t = T[idioma];
@@ -1467,11 +1486,7 @@
         if (xhr.status === 200) {
           barra.style.width = '100%';
           progresoTexto.textContent = T[idioma].listo;
-          const blob = new Blob([xhr.response], { type: 'application/zip' });
-          const url = URL.createObjectURL(blob);
-          const a = document.createElement('a');
-          a.href = url; a.download = 'partes.zip'; a.click();
-          URL.revokeObjectURL(url);
+          if (!descargarPartes(xhr.response)) return;
           cargarUsuario();
           setTimeout(() => {
             progresoContenedor.style.display = 'none';
@@ -1479,13 +1494,14 @@
             btnDividir.disabled = false;
           }, 3000);
         } else {
-          mostrarError(T[idioma].errorProcesar);
+          mostrarError(xhr.response?.error || T[idioma].errorProcesar);
         }
       });
 
       xhr.addEventListener('error', () => mostrarError(T[idioma].errorConexion));
       xhr.open('POST', '/dividir');
-      xhr.responseType = 'blob';
+      xhr.setRequestHeader('Accept', 'application/json');
+      xhr.responseType = 'json';
       xhr.send(form);
     });
 
@@ -1507,7 +1523,7 @@
 
       fetch('/dividir-desde-916/' + jobId, {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
         body: JSON.stringify({ duracion })
       }).then(async resp => {
         if (resp.status === 401) {
@@ -1527,15 +1543,12 @@
           return null;
         }
         barra.style.width = '90%';
-        return resp.blob();
-      }).then(blob => {
-        if (!blob) return;
+        return resp.json();
+      }).then(data => {
+        if (!data) return;
+        if (!descargarPartes(data)) return;
         barra.style.width = '100%';
         progresoTexto.textContent = t.listo || '✅ Listo';
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url; a.download = 'partes.zip'; a.click();
-        URL.revokeObjectURL(url);
         cargarUsuario();
         setTimeout(() => {
           progresoContenedor.style.display = 'none';

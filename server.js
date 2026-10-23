@@ -1,9 +1,10 @@
 require('dotenv').config();
 const express = require('express');
 const multer = require('multer');
-const archiver = require('archiver');
+const { createSplitDownloads } = require('./lib/split-downloads');
 const { spawn } = require('child_process');
 const path = require('path');
+const crypto = require('crypto');
 const fs = require('fs');
 const os = require('os');
 const session = require('express-session');
@@ -52,6 +53,74 @@ app.use((req, res, next) => {
 
 app.use(passport.initialize());
 app.use(passport.session());
+
+// ─── CLAVES API ──────────────────────────────────────────────────
+const API_KEY_PREFIX = 'ctu_';
+const MAX_API_KEYS = 5;
+const hashApiKey = key => crypto.createHash('sha256').update(key).digest('hex');
+const ERROR_API_PLAN = 'La API está disponible en los planes Pro y Pro Max.';
+const tieneAccesoApi = u => u.email === (process.env.ADMIN_EMAIL || 'felixfernandezcardenas@hotmail.com')
+  || ['pro', 'promax'].includes(u.plan);
+
+app.use(async (req, res, next) => {
+  const auth = req.get('Authorization') || '';
+  if (!auth.startsWith('Bearer ')) return next();
+  const key = auth.slice(7).trim();
+  if (!key.startsWith(API_KEY_PREFIX)) return res.status(401).json({ error: 'Clave API inválida.' });
+
+  const { data: apiKey, error } = await supabase
+    .from('api_keys').select('id, usuario_id').eq('key_hash', hashApiKey(key)).maybeSingle();
+  if (error) {
+    console.error('API key lookup:', error.message);
+    return res.status(503).json({ error: 'No se pudo verificar la clave API. Inténtalo de nuevo.' });
+  }
+  if (!apiKey) return res.status(401).json({ error: 'Clave API inválida o revocada.' });
+
+  const { data: usuario } = await supabase.from('usuarios').select('*').eq('id', apiKey.usuario_id).single();
+  if (!usuario) return res.status(401).json({ error: 'Clave API inválida o revocada.' });
+  if (!tieneAccesoApi(usuario)) return res.status(403).json({ error: ERROR_API_PLAN });
+
+  req.user = usuario;
+  req.viaApiKey = true;
+  supabase.from('api_keys').update({ last_used_at: new Date().toISOString() }).eq('id', apiKey.id).then(() => {});
+  next();
+});
+
+// Keys can only be managed from a logged-in browser session, never with another key.
+function soloSesionWeb(req, res, next) {
+  if (!req.user || req.viaApiKey) return res.status(401).json({ error: 'Inicia sesión en la web para gestionar tus claves API.' });
+  next();
+}
+
+app.get('/api/keys', soloSesionWeb, async (req, res) => {
+  const { data, error } = await supabase
+    .from('api_keys').select('id, nombre, prefijo, created_at, last_used_at')
+    .eq('usuario_id', req.user.id).order('created_at', { ascending: false });
+  if (error) return res.status(500).json({ error: 'No se pudieron cargar las claves.' });
+  res.json(data);
+});
+
+app.post('/api/keys', soloSesionWeb, express.json(), async (req, res) => {
+  if (!tieneAccesoApi(req.user)) return res.status(403).json({ error: ERROR_API_PLAN });
+  const { count, error: countError } = await supabase
+    .from('api_keys').select('id', { count: 'exact', head: true }).eq('usuario_id', req.user.id);
+  if (countError) return res.status(500).json({ error: 'No se pudo crear la clave.' });
+  if (count >= MAX_API_KEYS) return res.status(400).json({ error: `Máximo ${MAX_API_KEYS} claves. Revoca alguna antes de crear otra.` });
+
+  const nombre = String(req.body?.nombre || '').trim().slice(0, 50) || 'Mi clave';
+  const key = API_KEY_PREFIX + crypto.randomBytes(24).toString('base64url');
+  const { data, error } = await supabase.from('api_keys')
+    .insert([{ usuario_id: req.user.id, nombre, prefijo: key.slice(0, 10), key_hash: hashApiKey(key) }])
+    .select('id, nombre, prefijo, created_at, last_used_at').single();
+  if (error) return res.status(500).json({ error: 'No se pudo crear la clave.' });
+  res.json({ ...data, key });
+});
+
+app.delete('/api/keys/:id', soloSesionWeb, async (req, res) => {
+  const { error } = await supabase.from('api_keys').delete().eq('id', req.params.id).eq('usuario_id', req.user.id);
+  if (error) return res.status(500).json({ error: 'No se pudo revocar la clave.' });
+  res.json({ ok: true });
+});
 
 const CALLBACK_URL = process.env.CALLBACK_URL || 'http://localhost:3000/auth/google/callback';
 
@@ -267,12 +336,26 @@ const upload = multer({
   limits: { fileSize: 4 * 1024 * 1024 * 1024 }
 });
 
+const splitDownloads = createSplitDownloads();
+app.use('/descargas-partes', splitDownloads.router);
+
+function cleanSplitParts(directory) {
+  // Only remove clips generated in this request's own temporary folder.
+  try {
+    for (const name of fs.readdirSync(directory)) {
+      if (name.endsWith('.mp4')) fs.unlinkSync(path.join(directory, name));
+    }
+    fs.rmdirSync(directory);
+  } catch (_) {}
+}
+
 // In-memory job store for background video processing
 const jobs916 = new Map();
 setInterval(() => {
   const cutoff = Date.now() - 30 * 60 * 1000;
   for (const [id, job] of jobs916.entries()) {
-    if (job.createdAt < cutoff) {
+    if (job.status === 'processing') continue;
+    if ((job.finishedAt || job.createdAt) < cutoff) {
       if (job.outputFile) try { fs.unlinkSync(job.outputFile); } catch(e) {}
       jobs916.delete(id);
     }
@@ -316,6 +399,7 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
   const inputFile = req.file.path;
   const jobId = Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
   const outputFile = path.join(os.tmpdir(), 'v916_' + jobId + '.mp4');
+  // Keyframe every second: splitting later uses -c copy, which can only cut on keyframes.
   let args;
 
   if (modoCam === 'blur') {
@@ -324,7 +408,7 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
       '[0:v]scale=1080:1920:force_original_aspect_ratio=decrease[fg]',
       '[bg][fg]overlay=(W-w)/2:(H-h)/2[out]'
     ].join(';');
-    args = ['-i', inputFile, '-filter_complex', filterComplex, '-map', '[out]', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-y', outputFile];
+    args = ['-i', inputFile, '-filter_complex', filterComplex, '-map', '[out]', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-force_key_frames', 'expr:gte(t,n_forced*1)', '-y', outputFile];
   } else if (modoCam === 'sin-cam') {
     const cropCoords = ['cropX','cropY','cropW','cropH'].map(k => Math.round(Number(req.body[k])));
     let filtro;
@@ -334,7 +418,7 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
     } else {
       filtro = `scale=1080:1920:force_original_aspect_ratio=increase,crop=1080:1920`;
     }
-    args = ['-i', inputFile, '-vf', filtro, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-c:a', 'aac', '-b:a', '128k', '-y', outputFile];
+    args = ['-i', inputFile, '-vf', filtro, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-force_key_frames', 'expr:gte(t,n_forced*1)', '-c:a', 'aac', '-b:a', '128k', '-y', outputFile];
   } else {
     const camCoords = ['camX','camY','camW','camH'].map(k => Math.round(Number(req.body[k])));
     if (camCoords.some(isNaN) || camCoords.some(v => v < 0)) {
@@ -369,14 +453,14 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
     const topFilter = camPosicion === 'arriba' ? filtroCam : filtroGameplay;
     const botFilter = camPosicion === 'arriba' ? filtroGameplay : filtroCam;
     const filterComplex = [`[0:v]${topFilter}[top]`, `[0:v]${botFilter}[bot]`, `[top][bot]vstack=inputs=2[out]`].join(';');
-    args = ['-i', inputFile, '-filter_complex', filterComplex, '-map', '[out]', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-y', outputFile];
+    args = ['-i', inputFile, '-filter_complex', filterComplex, '-map', '[out]', '-map', '0:a?', '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-force_key_frames', 'expr:gte(t,n_forced*1)', '-y', outputFile];
   }
 
   const originalName916Decoded = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
   const nombreOriginal916 = path.parse(originalName916Decoded).name.replace(/[\\/:*?"<>|]/g, '').trim() || 'video';
 
   // Register job and respond immediately — no timeout possible
-  jobs916.set(jobId, { status: 'processing', createdAt: Date.now(), outputFile: null, error: null, nombreOriginal: nombreOriginal916 });
+  jobs916.set(jobId, { owner: String(req.user.id), status: 'processing', createdAt: Date.now(), outputFile: null, error: null, nombreOriginal: nombreOriginal916 });
   res.json({ jobId });
 
   // Process in background
@@ -388,7 +472,7 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
     try { fs.unlinkSync(inputFile); } catch(e) {}
     if (code !== 0) {
       console.error('FFmpeg 9:16 error (code', code, '):', stderrLog.slice(-500));
-      jobs916.set(jobId, { ...jobs916.get(jobId), status: 'error', error: 'Error al convertir. Código: ' + code });
+      jobs916.set(jobId, { ...jobs916.get(jobId), status: 'error', finishedAt: Date.now(), error: 'Error al convertir. Código: ' + code });
       return;
     }
 
@@ -405,18 +489,25 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
       }
     }
 
-    jobs916.set(jobId, { ...jobs916.get(jobId), status: 'done', outputFile });
+    const dur = stderrLog.match(/Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/);
+    const duracionSegundos = dur ? Math.round(+dur[1] * 3600 + +dur[2] * 60 + +dur[3]) : null;
+    jobs916.set(jobId, { ...jobs916.get(jobId), status: 'done', finishedAt: Date.now(), outputFile, duracionSegundos });
   });
 });
 
-app.get('/api/job916/:jobId', (req, res) => {
+function jobDelUsuario(req) {
   const job = jobs916.get(req.params.jobId);
+  return job && req.user && job.owner === String(req.user.id) ? job : null;
+}
+
+app.get('/api/job916/:jobId', (req, res) => {
+  const job = jobDelUsuario(req);
   if (!job) return res.status(404).json({ error: 'Job no encontrado' });
-  res.json({ status: job.status, error: job.error });
+  res.json({ status: job.status, error: job.error, duracionSegundos: job.duracionSegundos ?? null });
 });
 
 app.get('/api/job916/:jobId/download', (req, res) => {
-  const job = jobs916.get(req.params.jobId);
+  const job = jobDelUsuario(req);
   if (!job || job.status !== 'done' || !job.outputFile || !fs.existsSync(job.outputFile)) {
     return res.status(404).json({ error: 'No disponible' });
   }
@@ -457,8 +548,7 @@ app.post('/dividir', upload.single('video'), async (req, res) => {
   }
 
   const inputFile = req.file.path;
-  const outputDir = path.join(os.tmpdir(), 'partes_' + Date.now());
-  fs.mkdirSync(outputDir);
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'partes_'));
   const outputPattern = path.join(outputDir, 'parte_%02d.mp4');
 
   const args = [
@@ -468,35 +558,30 @@ app.post('/dividir', upload.single('video'), async (req, res) => {
   ];
 
   const ffmpeg = spawn(FFMPEG, args);
+  // Consume progress output so FFmpeg cannot block on a full stderr pipe.
+  ffmpeg.stderr.resume();
+  ffmpeg.on('error', err => {
+    console.error('FFmpeg dividir:', err.message);
+    if (!res.headersSent) res.status(500).json({ error: 'No se pudo iniciar el procesamiento del video.' });
+  });
 
   ffmpeg.on('close', async (code) => {
-    fs.unlinkSync(inputFile);
-
-    if (code !== 0) return res.status(500).json({ error: 'Error al procesar el video.' });
-
-    const partes = fs.readdirSync(outputDir).filter(f => f.endsWith('.mp4')).sort();
-    if (partes.length === 0) return res.status(500).json({ error: 'No se generaron partes.' });
-
-    const { data: u } = await supabase.from('usuarios').select('total_usos').eq('id', req.user.id).single();
-    await supabase.from('usuarios')
-      .update({ usos_hoy: usos + 1, ultimo_reset: hoy, total_usos: (u?.total_usos || 0) + 1 })
-      .eq('id', req.user.id);
-
-    const originalNameDecoded = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
-    const nombreBase = path.parse(originalNameDecoded).name.replace(/[\\/:*?"<>|]/g, '').trim() || 'video';
-
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', 'attachment; filename="partes.zip"');
-
-    const zip = archiver('zip');
-    zip.pipe(res);
-    partes.forEach((parte, i) => zip.file(path.join(outputDir, parte), { name: `${nombreBase} - parte ${i + 1}.mp4` }));
-    zip.finalize();
-
-    zip.on('end', () => {
-      partes.forEach(parte => fs.unlinkSync(path.join(outputDir, parte)));
-      fs.rmdirSync(outputDir);
-    });
+    try { fs.unlinkSync(inputFile); } catch (_) {}
+    try {
+      if (res.headersSent || res.destroyed) return;
+      if (code !== 0) return res.status(500).json({ error: 'Error al procesar el video.' });
+      const { data: u } = await supabase.from('usuarios').select('total_usos').eq('id', req.user.id).single();
+      await supabase.from('usuarios')
+        .update({ usos_hoy: usos + 1, ultimo_reset: hoy, total_usos: (u?.total_usos || 0) + 1 })
+        .eq('id', req.user.id);
+      const decoded = Buffer.from(req.file.originalname, 'latin1').toString('utf8');
+      await splitDownloads.send(req, res, outputDir, path.parse(decoded).name);
+    } catch (err) {
+      console.error('ZIP dividir:', err.message);
+      if (!res.headersSent && !res.destroyed) res.status(500).json({ error: 'No se pudo preparar el ZIP. Inténtalo de nuevo.' });
+    } finally {
+      cleanSplitParts(outputDir);
+    }
   });
 });
 
@@ -504,11 +589,12 @@ app.post('/dividir', upload.single('video'), async (req, res) => {
 app.get('/terminos', (req, res) => res.sendFile(path.join(__dirname, 'public', 'terminos.html')));
 app.get('/privacidad', (req, res) => res.sendFile(path.join(__dirname, 'public', 'privacidad.html')));
 app.get('/cookies', (req, res) => res.sendFile(path.join(__dirname, 'public', 'cookies.html')));
+app.get('/api-docs', (req, res) => res.sendFile(path.join(__dirname, 'public', 'api.html')));
 
 // ─── DIVIDIR DIRECTAMENTE DESDE UN JOB 9:16 (sin resubir el video) ──────────
 app.post('/dividir-desde-916/:jobId', express.json(), async (req, res) => {
   if (!req.user) return res.status(401).json({ error: 'Debes iniciar sesión.' });
-  const job = jobs916.get(req.params.jobId);
+  const job = jobDelUsuario(req);
   if (!job || job.status !== 'done' || !job.outputFile || !fs.existsSync(job.outputFile)) {
     return res.status(404).json({ error: 'El video convertido ya no está disponible (expiró).' });
   }
@@ -529,8 +615,7 @@ app.post('/dividir-desde-916/:jobId', express.json(), async (req, res) => {
 
   const inputFile = job.outputFile;
   const nombreBase = (job.nombreOriginal || 'video') + '_9_16';
-  const outputDir = path.join(os.tmpdir(), 'partes916_' + Date.now());
-  fs.mkdirSync(outputDir);
+  const outputDir = fs.mkdtempSync(path.join(os.tmpdir(), 'partes916_'));
   const outputPattern = path.join(outputDir, 'parte_%02d.mp4');
 
   const args = [
@@ -541,36 +626,29 @@ app.post('/dividir-desde-916/:jobId', express.json(), async (req, res) => {
   ];
 
   const ffmpegProc = spawn(FFMPEG, args);
+  ffmpegProc.stderr.resume();
+  ffmpegProc.on('error', err => {
+    console.error('FFmpeg dividir 9:16:', err.message);
+    if (!res.headersSent) res.status(500).json({ error: 'No se pudo iniciar el procesamiento del video.' });
+  });
   ffmpegProc.on('close', async (code) => {
-    if (code !== 0) {
-      try { fs.rmSync(outputDir, { recursive: true, force: true }); } catch(e) {}
-      return res.status(500).json({ error: 'Error al dividir el video.' });
+    try {
+      if (res.headersSent || res.destroyed) return;
+      if (code !== 0) return res.status(500).json({ error: 'Error al dividir el video.' });
+      if (!esAdmin) {
+        const { data: u } = await supabase.from('usuarios').select('total_usos').eq('id', req.user.id).single();
+        await supabase.from('usuarios').update({
+          usos_hoy: usos + 1, ultimo_reset: hoy,
+          total_usos: (u?.total_usos || 0) + 1
+        }).eq('id', req.user.id);
+      }
+      await splitDownloads.send(req, res, outputDir, nombreBase);
+    } catch (err) {
+      console.error('ZIP dividir 9:16:', err.message);
+      if (!res.headersSent && !res.destroyed) res.status(500).json({ error: 'No se pudo preparar el ZIP. Inténtalo de nuevo.' });
+    } finally {
+      cleanSplitParts(outputDir);
     }
-    const partes = fs.readdirSync(outputDir).filter(f => f.endsWith('.mp4')).sort();
-    if (partes.length === 0) {
-      try { fs.rmSync(outputDir, { recursive: true, force: true }); } catch(e) {}
-      return res.status(500).json({ error: 'No se generaron partes.' });
-    }
-
-    if (!esAdmin) {
-      const { data: u } = await supabase.from('usuarios').select('total_usos').eq('id', req.user.id).single();
-      await supabase.from('usuarios').update({
-        usos_hoy: usos + 1, ultimo_reset: hoy,
-        total_usos: (u?.total_usos || 0) + 1
-      }).eq('id', req.user.id);
-    }
-
-    res.setHeader('Content-Type', 'application/zip');
-    res.setHeader('Content-Disposition', 'attachment; filename="partes.zip"');
-    const zip = archiver('zip');
-    zip.pipe(res);
-    partes.forEach((parte, i) => {
-      zip.file(path.join(outputDir, parte), { name: `${nombreBase} - parte ${i + 1}.mp4` });
-    });
-    zip.finalize();
-    zip.on('end', () => {
-      try { fs.rmSync(outputDir, { recursive: true, force: true }); } catch(e) {}
-    });
   });
 });
 

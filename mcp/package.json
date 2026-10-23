@@ -1,0 +1,21 @@
+{
+  "name": "clipstoyou-mcp",
+  "version": "1.0.0",
+  "description": "ClipsToYou connector (MCP) for Claude Desktop, ChatGPT Desktop and other AI apps: convert videos to 9:16 and split them into clips from local folders.",
+  "type": "module",
+  "bin": {
+    "clipstoyou-mcp": "index.js"
+  },
+  "files": [
+    "index.js"
+  ],
+  "engines": {
+    "node": ">=20.18"
+  },
+  "dependencies": {
+    "@modelcontextprotocol/sdk": "^1.32.2",
+    "undici": "^7.0.0",
+    "yauzl": "^3.4.0",
+    "zod": "^4.0.0"
+  }
+}
