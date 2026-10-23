@@ -118,6 +118,7 @@ async function procesar(t) {
     form.append('camEsquina', t.camara.esquina);
     form.append('camTamano', t.camara.tamano);
     form.append('camPosicion', t.camara.en);
+    form.append('gameplay', t.camara.gameplay);
   }
   const { jobId } = await (await api('/convertir-916', { method: 'POST', body: form })).json();
 
@@ -217,12 +218,13 @@ server.registerTool('procesar_video', {
     camara_esquina: z.enum(['arriba-izquierda', 'arriba-derecha', 'abajo-izquierda', 'abajo-derecha']).optional().describe('Solo con-cam (obligatorio): esquina del vídeo original donde está la webcam.'),
     camara_tamano: z.enum(['pequena', 'mediana', 'grande']).default('mediana').describe('Solo con-cam: ancho aproximado de la webcam en el original (20%, 28% o 36% del ancho).'),
     camara_en: z.enum(['arriba', 'abajo']).default('abajo').describe('Solo con-cam: dónde va la webcam en el vídeo 9:16.'),
+    gameplay: z.enum(['evitar-camara', 'centrado']).default('evitar-camara').describe('Solo con-cam: evitar-camara = la zona más grande sin la webcam (el juego puede quedar desplazado); centrado = el centro de la pantalla (puede verse un trozo de la webcam en una esquina).'),
     duracion_parte_segundos: z.number().int().min(5).optional().describe('Duración de cada clip en segundos.'),
     numero_partes: z.number().int().min(1).max(100).optional().describe('Alternativa a duracion_parte_segundos: número de clips iguales.'),
     carpeta_916: z.string().optional().describe(`Carpeta para el vídeo 9:16. Por defecto "${CARPETA_916}" junto al vídeo original.`),
     carpeta_clips: z.string().optional().describe(`Carpeta para los clips. Por defecto "${CARPETA_CLIPS}" junto al vídeo original.`)
   }
-}, async ({ ruta_video, convertir_916, modo, camara_esquina, camara_tamano, camara_en, duracion_parte_segundos, numero_partes, carpeta_916, carpeta_clips }) => {
+}, async ({ ruta_video, convertir_916, modo, camara_esquina, camara_tamano, camara_en, gameplay, duracion_parte_segundos, numero_partes, carpeta_916, carpeta_clips }) => {
   if (convertir_916 && modo === 'con-cam' && !camara_esquina) return fallo('Para con-cam indica camara_esquina (en qué esquina está la webcam).');
   const video = path.resolve(ruta_video);
   if (!EXTENSIONES.has(path.extname(video).toLowerCase())) return fallo('Formato no soportado. Usa mp4, mov, avi, mkv o webm.');
@@ -239,7 +241,7 @@ server.registerTool('procesar_video', {
   const t = {
     id: crypto.randomUUID().slice(0, 8),
     video, modo: convertir_916 ? modo : null, convertir: convertir_916,
-    camara: modo === 'con-cam' ? { esquina: camara_esquina, tamano: camara_tamano, en: camara_en } : null,
+    camara: modo === 'con-cam' ? { esquina: camara_esquina, tamano: camara_tamano, en: camara_en, gameplay } : null,
     duracionParte: duracion_parte_segundos || (numero_partes ? null : DURACION_PARTE_DEFECTO),
     numeroPartes: numero_partes || null,
     carpeta916: carpeta_916 ? path.resolve(carpeta_916) : path.join(carpeta, CARPETA_916),

@@ -485,6 +485,11 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
     if (gpCoords.every(v => !isNaN(v) && v >= 0) && gpCoords[2] > 0 && gpCoords[3] > 0) {
       const [gx, gy, gw, gh] = gpCoords;
       filtroGameplay = `crop=${gw}:${gh}:${gx}:${gy},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
+    } else if (req.body.gameplay === 'centrado' && videoW > 0 && videoH > 0) {
+      // Same as dragging the web's green gameplay box to the centre: largest 1080:960 window, may overlap the webcam.
+      const gw = Math.min(videoW, Math.round(videoH * 1080 / 960));
+      const gh = Math.min(videoH, Math.round(gw * 960 / 1080));
+      filtroGameplay = `crop=${gw}:${gh}:${Math.round((videoW - gw) / 2)}:${Math.round((videoH - gh) / 2)},scale=1080:960`;
     } else if (videoW > 0 && videoH > 0) {
       const candidates = [
         { x: 0,     y: 0,      w: videoW,       h: cy           },

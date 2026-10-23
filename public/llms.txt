@@ -26,6 +26,7 @@ Keep the key private (environment variable or local config file). Never print it
   - which corner of the original video the webcam is in: `camEsquina` = `arriba-izquierda` (top-left) | `arriba-derecha` (top-right) | `abajo-izquierda` (bottom-left) | `abajo-derecha` (bottom-right)
   - its approximate size: `camTamano` = `pequena` (≈20% of the width) | `mediana` (≈28%, default) | `grande` (≈36%)
   - whether the webcam goes on top or bottom of the final video: `camPosicion` = `arriba` | `abajo` (default)
+  - how to frame the game half: `gameplay` = `evitar-camara` (default: the largest area of the screen that doesn't include the webcam; the game can look shifted to one side) | `centrado` (the centre of the screen, so the game stays centred, but a piece of the webcam can show in a corner of the game half)
 
 Splitting: either `duracion` (seconds per clip) or `partes` (number of equal clips). If the user has no preference, suggest 60–120 second clips.
 
