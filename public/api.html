@@ -43,10 +43,6 @@
     .estado.on { color: var(--verde); background: #12241a; }
     .estado.off { color: var(--ambar); background: #2a2012; }
     .vacio { color: var(--gris); font-size: 0.88rem; padding-top: 16px; }
-    details { margin-top: 28px; color: var(--gris); font-size: 0.88rem; }
-    summary { cursor: pointer; }
-    summary:hover { color: #fff; }
-    details pre { background: #111; border: 1px solid var(--borde); border-radius: 8px; padding: 14px; margin-top: 10px; overflow-x: auto; font-size: 0.82rem; color: #ddd; }
     footer { border-top: 1px solid var(--borde); padding: 20px 48px; text-align: center; color: var(--gris); font-size: 0.8rem; }
     @media (max-width: 600px) {
       header, footer { padding-left: 16px; padding-right: 16px; }
@@ -84,8 +80,8 @@
       <div class="error" id="error"></div>
 
       <div class="nueva" id="nueva">
-        <p data-lang="es">Cópiala ahora: no se volverá a mostrar.</p>
-        <p data-lang="en">Copy it now: it won't be shown again.</p>
+        <p data-lang="es">Cópiala ahora: no se volverá a mostrar. Pásasela a tu IA junto con <code>clipstoyou.com/llms.txt</code></p>
+        <p data-lang="en">Copy it now: it won't be shown again. Give it to your AI along with <code>clipstoyou.com/llms.txt</code></p>
         <div class="clave">
           <code id="valorClave"></code>
           <button class="btn-sec" id="btnCopiar"></button>
@@ -98,19 +94,6 @@
         <span data-lang="es">Aún no tienes claves.</span><span data-lang="en">You don't have any keys yet.</span>
       </p>
     </div>
-
-    <details>
-      <summary><span data-lang="es">Cómo conectarla con Claude o ChatGPT Desktop</span><span data-lang="en">How to connect it to Claude or ChatGPT Desktop</span></summary>
-      <pre>{
-  "mcpServers": {
-    "clipstoyou": {
-      "command": "npx",
-      "args": ["-y", "clipstoyou-mcp"],
-      "env": { "CLIPSTOYOU_API_KEY": "ctu_..." }
-    }
-  }
-}</pre>
-    </details>
   </main>
   <footer>© 2025 ClipsToYou — <a href="/">Volver al inicio / Back to home</a></footer>
 

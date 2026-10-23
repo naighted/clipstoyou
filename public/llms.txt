@@ -1,0 +1,81 @@
+# ClipsToYou API
+
+> ClipsToYou (https://www.clipstoyou.com) converts videos to vertical 9:16 and splits videos into equal clips ready for TikTok, YouTube Shorts and Instagram Reels. This API lets an AI assistant do it for the user from files on their computer. Available on the Pro and Pro Max plans. Users create keys at https://www.clipstoyou.com/api-docs.
+
+Explain the options to the user in their language, agree on what they want, then run the steps. Error messages from the API are in Spanish; translate them for the user.
+
+## Authentication
+
+Base URL: https://www.clipstoyou.com
+Send the key (starts with `ctu_`) on every request:
+
+    Authorization: Bearer ctu_...
+
+Keep the key private (environment variable or local config file). Never print it in full.
+
+## What the user can choose
+
+1. Convert to 9:16, then split into clips (most common).
+2. Only convert to 9:16 (one vertical video).
+3. Only split, keeping the original format.
+
+9:16 modes (`modoCam`):
+- `blur`: the whole video centered over a blurred copy of itself. No extra options. Good default.
+- `sin-cam`: center crop to full screen (sides are cut).
+- `con-cam`: for streamers/gameplay. The webcam goes in one half and the game in the other. Ask the user:
+  - which corner of the original video the webcam is in: `camEsquina` = `arriba-izquierda` (top-left) | `arriba-derecha` (top-right) | `abajo-izquierda` (bottom-left) | `abajo-derecha` (bottom-right)
+  - its approximate size: `camTamano` = `pequena` (≈20% of the width) | `mediana` (≈28%, default) | `grande` (≈36%)
+  - whether the webcam goes on top or bottom of the final video: `camPosicion` = `arriba` | `abajo` (default)
+
+Splitting: either `duracion` (seconds per clip) or `partes` (number of equal clips). If the user has no preference, suggest 60–120 second clips.
+
+## 1. Convert to 9:16 — POST /convertir-916
+
+multipart/form-data: `video` (file, up to 4 GB; mp4, mov, avi, mkv, webm), `modoCam`, and for `con-cam` the fields above. Returns immediately:
+
+    curl -X POST https://www.clipstoyou.com/convertir-916 \
+      -H "Authorization: Bearer $CLIPSTOYOU_API_KEY" \
+      -F "video=@/path/My video.mp4" -F "modoCam=blur"
+    → {"jobId":"lx3k9abc12"}
+
+Uploads of large files can take minutes; do not use short client timeouts.
+
+## 2. Wait — GET /api/job916/{jobId}
+
+Poll every 5–10 s until `status` is `done` or `error`:
+
+    → {"status":"processing","error":null,"duracionSegundos":null}
+    → {"status":"done","error":null,"duracionSegundos":754}
+
+## 3a. Download the 9:16 video — GET /api/job916/{jobId}/download
+
+Returns the MP4. Save it with the original file name (e.g. into a "Videos 9-16" folder) unless the user wants otherwise.
+
+## 3b. Split the converted video — POST /dividir-desde-916/{jobId}
+
+No re-upload needed. JSON body `{"duracion": 120}` (seconds per clip; for N equal clips use ceil(duracionSegundos / N)). Send `Accept: application/json`:
+
+    curl -X POST https://www.clipstoyou.com/dividir-desde-916/lx3k9abc12 \
+      -H "Authorization: Bearer $CLIPSTOYOU_API_KEY" \
+      -H "Content-Type: application/json" -H "Accept: application/json" \
+      -d '{"duracion": 120}'
+    → {"downloadUrl":"/descargas-partes/3f2c...","partes":5}
+
+## Split without converting — POST /dividir
+
+multipart/form-data: `video` (file) and `duracion` or `partes`. Send `Accept: application/json`. Returns `{"downloadUrl": "...", "partes": N}` like 3b. Without re-encoding, cuts happen on the original video's keyframes, so clip lengths can vary by a few seconds.
+
+## 4. Download the clips — GET {downloadUrl}
+
+Same Authorization header. Returns a ZIP whose files are named `<name> - parte 1.mp4`, `<name> - parte 2.mp4`, … in order. Extract them (e.g. into `Clips/<video name>/`) and delete the ZIP.
+
+## Account — GET /api/usuario
+
+Plan and remaining uses: `{"autenticado":true,"plan":"pro","isAdmin":false,...}`.
+
+## Limits and errors
+
+- Pro: 7 conversions to 9:16 per week. Pro Max: unlimited. Splitting is unlimited on both.
+- Converted videos and ZIPs are deleted from the server 30 minutes after they are ready: download them straight away.
+- Errors are JSON `{"error":"..."}`: 401 invalid or deleted key · 403 key paused or plan without API access · 404 job or download not found or expired · 429 plan limit reached.
+- Process one video at a time.
