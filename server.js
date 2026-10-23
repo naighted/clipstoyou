@@ -389,6 +389,24 @@ function coordsCamEsquina(esquina, tamano, ancho, alto) {
   return [esquina.endsWith('derecha') ? ancho - w : 0, esquina.startsWith('abajo') ? alto - h : 0, w, h];
 }
 
+// Largest horizontally centred 1080:960 window that doesn't touch the webcam: either narrow enough to
+// pass beside it, or fitted into the band above/below it (like shrinking the web's green box).
+function gameplayCentradoSinCamara(W, H, [cx, cy, cw, ch]) {
+  const A = 1080 / 960;
+  const ventana = (w, y0, alto) => {
+    const ancho = Math.floor(w / 2) * 2, h = Math.floor(w / A / 2) * 2;
+    return { w: ancho, h, x: Math.round((W - ancho) / 2), y: Math.round(y0 + (alto - h) / 2) };
+  };
+  const opciones = [];
+  const libreAncho = cx + cw <= W / 2 ? W - 2 * (cx + cw) : cx >= W / 2 ? 2 * cx - W : 0;
+  if (libreAncho > 0) opciones.push(ventana(Math.min(libreAncho, W, H * A), 0, H));
+  const arriba = cy, abajo = H - cy - ch;
+  const banda = arriba >= abajo ? { y0: 0, alto: arriba } : { y0: cy + ch, alto: abajo };
+  if (banda.alto > 0) opciones.push(ventana(Math.min(W, banda.alto * A), banda.y0, banda.alto));
+  const mejor = opciones.sort((a, b) => b.w * b.h - a.w * a.h)[0];
+  return mejor && mejor.w >= W * 0.15 ? mejor : null;
+}
+
 // In-memory job store for background video processing
 const jobs916 = new Map();
 setInterval(() => {
@@ -482,9 +500,14 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
     let filtroGameplay = `scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
 
     const gpCoords = ['gpX','gpY','gpW','gpH'].map(k => Math.round(Number(req.body[k])));
+    const zonaCentradaSinCam = req.body.gameplay === 'centrado-sin-camara' && videoW > 0 && videoH > 0
+      ? gameplayCentradoSinCamara(videoW, videoH, camCoords) : null;
     if (gpCoords.every(v => !isNaN(v) && v >= 0) && gpCoords[2] > 0 && gpCoords[3] > 0) {
       const [gx, gy, gw, gh] = gpCoords;
       filtroGameplay = `crop=${gw}:${gh}:${gx}:${gy},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
+    } else if (zonaCentradaSinCam) {
+      const z = zonaCentradaSinCam;
+      filtroGameplay = `crop=${z.w}:${z.h}:${z.x}:${z.y},scale=1080:960`;
     } else if (req.body.gameplay === 'centrado' && videoW > 0 && videoH > 0) {
       // Same as dragging the web's green gameplay box to the centre: largest 1080:960 window, may overlap the webcam.
       const gw = Math.min(videoW, Math.round(videoH * 1080 / 960));

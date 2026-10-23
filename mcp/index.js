@@ -218,7 +218,7 @@ server.registerTool('procesar_video', {
     camara_esquina: z.enum(['arriba-izquierda', 'arriba-derecha', 'abajo-izquierda', 'abajo-derecha']).optional().describe('Solo con-cam (obligatorio): esquina del vídeo original donde está la webcam.'),
     camara_tamano: z.enum(['pequena', 'mediana', 'grande']).default('mediana').describe('Solo con-cam: ancho aproximado de la webcam en el original (20%, 28% o 36% del ancho).'),
     camara_en: z.enum(['arriba', 'abajo']).default('abajo').describe('Solo con-cam: dónde va la webcam en el vídeo 9:16.'),
-    gameplay: z.enum(['evitar-camara', 'centrado']).default('evitar-camara').describe('Solo con-cam: evitar-camara = la zona más grande sin la webcam (el juego puede quedar desplazado); centrado = el centro de la pantalla (puede verse un trozo de la webcam en una esquina).'),
+    gameplay: z.enum(['evitar-camara', 'centrado', 'centrado-sin-camara']).default('evitar-camara').describe('Solo con-cam: evitar-camara = la zona más grande sin la webcam (el juego puede quedar desplazado); centrado = el centro de la pantalla (puede verse un trozo de la webcam en una esquina); centrado-sin-camara = juego centrado con el zoom justo para que no salga la webcam.'),
     duracion_parte_segundos: z.number().int().min(5).optional().describe('Duración de cada clip en segundos.'),
     numero_partes: z.number().int().min(1).max(100).optional().describe('Alternativa a duracion_parte_segundos: número de clips iguales.'),
     carpeta_916: z.string().optional().describe(`Carpeta para el vídeo 9:16. Por defecto "${CARPETA_916}" junto al vídeo original.`),
