@@ -7,49 +7,50 @@
   <link rel="icon" type="image/png" href="/favicon.png">
   <link rel="apple-touch-icon" href="/favicon.png">
   <style>
-    :root { --bg: #0d0d0d; --card: #141414; --borde: #222; --morado: #7c3aed; --gris: #888; --rojo: #eb5757; --verde: #27ae60; }
+    :root { --bg: #0d0d0d; --card: #141414; --borde: #222; --morado: #7c3aed; --gris: #888; --rojo: #eb5757; --verde: #27ae60; --ambar: #f2a33a; }
     * { margin: 0; padding: 0; box-sizing: border-box; }
-    body { background: var(--bg); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; line-height: 1.7; }
+    body { background: var(--bg); color: #e0e0e0; font-family: 'Segoe UI', sans-serif; line-height: 1.6; }
     html[lang="es"] [data-lang="en"], html[lang="en"] [data-lang="es"] { display: none !important; }
     header { border-bottom: 1px solid var(--borde); padding: 18px 48px; display: flex; align-items: center; justify-content: space-between; }
     header a.brand { color: #e0e0e0; text-decoration: none; font-size: 1.1rem; font-weight: 700; }
     header a.brand span { color: var(--morado); }
     .btn-lang { background: transparent; border: 1px solid var(--borde); color: var(--gris); padding: 5px 14px; border-radius: 20px; cursor: pointer; font-size: 0.82rem; }
     .btn-lang:hover { color: #fff; border-color: #555; }
-    main { max-width: 820px; margin: 0 auto; padding: 48px 24px 80px; }
-    h1 { font-size: 2rem; font-weight: 800; margin-bottom: 8px; }
-    .sub { color: var(--gris); margin-bottom: 36px; }
-    h2 { font-size: 1.2rem; font-weight: 700; margin: 40px 0 12px; color: #fff; }
-    h3 { font-size: 1rem; font-weight: 700; margin: 24px 0 8px; color: #fff; }
-    p, li { color: #ccc; }
-    p { margin-bottom: 12px; }
-    ul { padding-left: 20px; margin-bottom: 12px; }
+    main { max-width: 720px; margin: 0 auto; padding: 56px 24px 80px; }
+    h1 { font-size: 1.8rem; font-weight: 800; }
+    .sub { color: var(--gris); margin: 4px 0 28px; }
     a { color: var(--morado); }
-    code { background: #1a1a1a; border: 1px solid var(--borde); border-radius: 4px; padding: 1px 6px; font-size: 0.88em; font-family: Consolas, monospace; }
-    pre { background: #111; border: 1px solid var(--borde); border-radius: 8px; padding: 14px 16px; overflow-x: auto; margin-bottom: 14px; font-size: 0.85rem; line-height: 1.55; }
-    pre code { background: none; border: none; padding: 0; }
+    code, pre { font-family: Consolas, monospace; }
     .card { background: var(--card); border: 1px solid var(--borde); border-radius: 12px; padding: 20px; }
-    .fila { display: flex; gap: 10px; flex-wrap: wrap; }
-    input[type=text] { flex: 1; min-width: 180px; background: #0d0d0d; border: 1px solid var(--borde); border-radius: 8px; color: #fff; padding: 10px 12px; font-size: 0.9rem; }
-    button.btn { background: var(--morado); color: #fff; border: none; border-radius: 8px; padding: 10px 18px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
-    button.btn:disabled { opacity: 0.5; cursor: default; }
-    button.btn-sec { background: transparent; border: 1px solid var(--borde); color: #ccc; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; }
-    button.btn-sec:hover { border-color: #555; color: #fff; }
-    button.btn-rojo:hover { border-color: var(--rojo); color: var(--rojo); }
-    .nueva-clave { display: none; margin-top: 16px; border: 1px solid var(--verde); border-radius: 8px; padding: 14px; background: #0f1a12; }
-    .nueva-clave pre { margin: 8px 0; word-break: break-all; white-space: pre-wrap; }
+    .fila { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; }
+    input[type=text] { flex: 1; min-width: 160px; background: #0d0d0d; border: 1px solid var(--borde); border-radius: 8px; color: #fff; padding: 10px 12px; font-size: 0.9rem; }
+    .btn { background: var(--morado); color: #fff; border: none; border-radius: 8px; padding: 10px 18px; font-weight: 600; cursor: pointer; font-size: 0.9rem; }
+    .btn:disabled { opacity: 0.5; cursor: default; }
+    .btn-sec { background: transparent; border: 1px solid var(--borde); color: #ccc; border-radius: 8px; padding: 6px 12px; cursor: pointer; font-size: 0.8rem; }
+    .btn-sec:hover { border-color: #555; color: #fff; }
+    .btn-rojo:hover { border-color: var(--rojo); color: var(--rojo); }
+    .nueva { display: none; margin-top: 16px; border: 1px solid var(--verde); border-radius: 10px; padding: 16px; background: #0f1a12; }
+    .nueva p { font-size: 0.88rem; color: #cfe9d6; margin-bottom: 10px; }
+    .clave { display: flex; gap: 8px; align-items: center; background: #0d0d0d; border: 1px solid var(--borde); border-radius: 8px; padding: 10px 12px; margin-bottom: 12px; }
+    .clave code { flex: 1; word-break: break-all; font-size: 0.85rem; color: #fff; }
     .error { color: var(--rojo); font-size: 0.88rem; margin-top: 10px; display: none; }
-    table { width: 100%; border-collapse: collapse; margin-top: 18px; font-size: 0.88rem; }
-    th, td { text-align: left; padding: 8px 6px; border-bottom: 1px solid var(--borde); }
-    th { color: var(--gris); font-weight: 600; }
-    .vacio { color: var(--gris); font-size: 0.88rem; margin-top: 14px; }
-    .endpoint { font-family: Consolas, monospace; font-weight: 700; color: #fff; }
-    .metodo { color: var(--morado); }
+    .lista { margin-top: 20px; border-top: 1px solid var(--borde); }
+    .item { display: flex; align-items: center; gap: 12px; padding: 12px 0; border-bottom: 1px solid var(--borde); flex-wrap: wrap; }
+    .item .info { flex: 1; min-width: 180px; }
+    .item .nombre { font-weight: 600; color: #fff; font-size: 0.92rem; }
+    .item .meta { color: var(--gris); font-size: 0.78rem; }
+    .estado { font-size: 0.72rem; font-weight: 700; padding: 2px 8px; border-radius: 10px; margin-left: 6px; }
+    .estado.on { color: var(--verde); background: #12241a; }
+    .estado.off { color: var(--ambar); background: #2a2012; }
+    .vacio { color: var(--gris); font-size: 0.88rem; padding-top: 16px; }
+    details { margin-top: 28px; color: var(--gris); font-size: 0.88rem; }
+    summary { cursor: pointer; }
+    summary:hover { color: #fff; }
+    details pre { background: #111; border: 1px solid var(--borde); border-radius: 8px; padding: 14px; margin-top: 10px; overflow-x: auto; font-size: 0.82rem; color: #ddd; }
     footer { border-top: 1px solid var(--borde); padding: 20px 48px; text-align: center; color: var(--gris); font-size: 0.8rem; }
     @media (max-width: 600px) {
       header, footer { padding-left: 16px; padding-right: 16px; }
-      main { padding: 32px 16px 60px; }
-      th:nth-child(3), td:nth-child(3) { display: none; }
+      main { padding: 36px 16px 60px; }
     }
   </style>
 </head>
@@ -61,278 +62,181 @@
   <main>
     <h1>API</h1>
     <p class="sub">
-      <span data-lang="es">Automatiza ClipsToYou desde tus scripts o desde una IA como Claude o ChatGPT: convierte a 9:16 y divide en partes sin abrir la web. Incluida en los planes Pro y Pro Max.</span>
-      <span data-lang="en">Automate ClipsToYou from your scripts or from an AI like Claude or ChatGPT: convert to 9:16 and split into parts without opening the website. Included in the Pro and Pro Max plans.</span>
+      <span data-lang="es">Conecta ClipsToYou con Claude o ChatGPT.</span>
+      <span data-lang="en">Connect ClipsToYou to Claude or ChatGPT.</span>
     </p>
 
-    <!-- CLAVES -->
-    <h2 data-lang="es">Tus claves API</h2>
-    <h2 data-lang="en">Your API keys</h2>
     <div class="card" id="panelLogin" style="display:none">
-      <p data-lang="es" style="margin:0">Necesitas una cuenta para crear claves. <a href="/auth/google">Inicia sesión con Google</a> y vuelve a esta página.</p>
-      <p data-lang="en" style="margin:0">You need an account to create keys. <a href="/auth/google">Log in with Google</a> and come back to this page.</p>
+      <span data-lang="es"><a href="/auth/google">Inicia sesión</a> para gestionar tus claves.</span>
+      <span data-lang="en"><a href="/auth/google">Log in</a> to manage your keys.</span>
     </div>
+
     <div class="card" id="panelPlan" style="display:none">
-      <p data-lang="es" style="margin:0">La API y el conector para Claude y ChatGPT están incluidos en los planes <strong>Pro</strong> y <strong>Pro Max</strong>. <a href="/#precios">Ver planes</a></p>
-      <p data-lang="en" style="margin:0">The API and the Claude and ChatGPT connector are included in the <strong>Pro</strong> and <strong>Pro Max</strong> plans. <a href="/#precios">See plans</a></p>
+      <span data-lang="es">La API está incluida en los planes Pro y Pro Max. <a href="/#precios">Ver planes</a></span>
+      <span data-lang="en">The API is included in the Pro and Pro Max plans. <a href="/#precios">See plans</a></span>
     </div>
+
     <div class="card" id="panelClaves" style="display:none">
       <div class="fila">
-        <input type="text" id="nombreClave" maxlength="50" placeholder="Nombre (ej: Claude en mi PC)">
+        <input type="text" id="nombreClave" maxlength="50">
         <button class="btn" id="btnCrear"><span data-lang="es">Generar clave</span><span data-lang="en">Generate key</span></button>
       </div>
-      <div class="error" id="errorClaves"></div>
-      <div class="nueva-clave" id="nuevaClave">
-        <strong data-lang="es">Copia tu clave ahora. Por seguridad no la volverás a ver.</strong>
-        <strong data-lang="en">Copy your key now. For security you won't see it again.</strong>
-        <pre><code id="valorClave"></code></pre>
-        <button class="btn-sec" id="btnCopiar"><span data-lang="es">Copiar</span><span data-lang="en">Copy</span></button>
+      <div class="error" id="error"></div>
+
+      <div class="nueva" id="nueva">
+        <p data-lang="es">Cópiala ahora: no se volverá a mostrar.</p>
+        <p data-lang="en">Copy it now: it won't be shown again.</p>
+        <div class="clave">
+          <code id="valorClave"></code>
+          <button class="btn-sec" id="btnCopiar"></button>
+        </div>
+        <button class="btn" id="btnHecho"><span data-lang="es">Ya la he copiado</span><span data-lang="en">I've copied it</span></button>
       </div>
-      <table id="tablaClaves">
-        <thead><tr>
-          <th><span data-lang="es">Nombre</span><span data-lang="en">Name</span></th>
-          <th><span data-lang="es">Clave</span><span data-lang="en">Key</span></th>
-          <th><span data-lang="es">Último uso</span><span data-lang="en">Last used</span></th>
-          <th></th>
-        </tr></thead>
-        <tbody></tbody>
-      </table>
-      <p class="vacio" id="sinClaves">
+
+      <div class="lista" id="lista"></div>
+      <p class="vacio" id="vacio" style="display:none">
         <span data-lang="es">Aún no tienes claves.</span><span data-lang="en">You don't have any keys yet.</span>
       </p>
     </div>
-    <p style="margin-top:12px;font-size:0.85rem;color:var(--gris)">
-      <span data-lang="es">Trata la clave como una contraseña: quien la tenga puede usar tu cuenta y tus límites del plan. Si se filtra, revócala.</span>
-      <span data-lang="en">Treat the key like a password: whoever has it can use your account and plan limits. If it leaks, revoke it.</span>
-    </p>
 
-    <!-- AUTENTICACIÓN -->
-    <h2 data-lang="es">Autenticación</h2>
-    <h2 data-lang="en">Authentication</h2>
-    <p data-lang="es">Envía la clave en la cabecera <code>Authorization</code> de cada petición. Base URL: <code>https://www.clipstoyou.com</code></p>
-    <p data-lang="en">Send the key in the <code>Authorization</code> header of every request. Base URL: <code>https://www.clipstoyou.com</code></p>
-    <pre><code>Authorization: Bearer ctu_tu_clave</code></pre>
-    <p data-lang="es">Se aplican los mismos límites de tu plan que en la web. Comprueba tu plan y usos restantes con <code>GET /api/usuario</code>.</p>
-    <p data-lang="en">The same plan limits as on the website apply. Check your plan and remaining uses with <code>GET /api/usuario</code>.</p>
-
-    <!-- FLUJO -->
-    <h2 data-lang="es">Flujo completo: 9:16 y dividir en partes</h2>
-    <h2 data-lang="en">Full flow: 9:16 and split into parts</h2>
-
-    <h3><span class="metodo">1.</span> <span class="endpoint">POST /convertir-916</span></h3>
-    <p data-lang="es">Sube el vídeo (multipart, campo <code>video</code>, hasta 4 GB) y elige el modo con <code>modoCam</code>:</p>
-    <p data-lang="en">Upload the video (multipart, field <code>video</code>, up to 4 GB) and pick the mode with <code>modoCam</code>:</p>
-    <ul data-lang="es">
-      <li><code>blur</code>: vídeo completo centrado con fondo desenfocado. No necesita más parámetros. Es el modo recomendado para automatizar.</li>
-      <li><code>sin-cam</code>: recorte a pantalla completa. Opcional: <code>cropX</code>, <code>cropY</code>, <code>cropW</code>, <code>cropH</code> (píxeles del vídeo original).</li>
-      <li><code>con-cam</code>: cámara arriba o abajo y juego en la otra mitad. Obligatorio: <code>camX</code>, <code>camY</code>, <code>camW</code>, <code>camH</code>, <code>videoW</code>, <code>videoH</code>. Opcional: <code>camPosicion</code> (<code>arriba</code> | <code>abajo</code>), <code>gpX</code>, <code>gpY</code>, <code>gpW</code>, <code>gpH</code>.</li>
-    </ul>
-    <ul data-lang="en">
-      <li><code>blur</code>: full video centered over a blurred background. No extra parameters. Recommended for automation.</li>
-      <li><code>sin-cam</code>: full-screen crop. Optional: <code>cropX</code>, <code>cropY</code>, <code>cropW</code>, <code>cropH</code> (pixels of the original video).</li>
-      <li><code>con-cam</code>: webcam on top or bottom, gameplay in the other half. Required: <code>camX</code>, <code>camY</code>, <code>camW</code>, <code>camH</code>, <code>videoW</code>, <code>videoH</code>. Optional: <code>camPosicion</code> (<code>arriba</code> = top | <code>abajo</code> = bottom), <code>gpX</code>, <code>gpY</code>, <code>gpW</code>, <code>gpH</code>.</li>
-    </ul>
-    <pre><code>curl -X POST https://www.clipstoyou.com/convertir-916 \
-  -H "Authorization: Bearer $CLIPSTOYOU_KEY" \
-  -F "video=@mi_video.mp4" \
-  -F "modoCam=blur"
-
-# → {"jobId":"lx3k9abc12"}</code></pre>
-
-    <h3><span class="metodo">2.</span> <span class="endpoint">GET /api/job916/{jobId}</span></h3>
-    <p data-lang="es">Consulta cada 5–10 segundos hasta que <code>status</code> sea <code>done</code> o <code>error</code>. Al terminar devuelve la duración en segundos para calcular las partes.</p>
-    <p data-lang="en">Poll every 5–10 seconds until <code>status</code> is <code>done</code> or <code>error</code>. When done it returns the duration in seconds so you can work out the parts.</p>
-    <pre><code>curl https://www.clipstoyou.com/api/job916/lx3k9abc12 \
-  -H "Authorization: Bearer $CLIPSTOYOU_KEY"
-
-# → {"status":"done","error":null,"duracionSegundos":754}</code></pre>
-
-    <h3><span class="metodo">3a.</span> <span class="endpoint">POST /dividir-desde-916/{jobId}</span></h3>
-    <p data-lang="es">Divide el vídeo ya convertido sin volver a subirlo. <code>duracion</code> = segundos de cada parte. Para N partes iguales usa <code>ceil(duracionSegundos / N)</code>. Envía <code>Accept: application/json</code> para recibir un enlace de descarga.</p>
-    <p data-lang="en">Split the converted video without uploading it again. <code>duracion</code> = seconds per part. For N equal parts use <code>ceil(duracionSegundos / N)</code>. Send <code>Accept: application/json</code> to receive a download link.</p>
-    <pre><code>curl -X POST https://www.clipstoyou.com/dividir-desde-916/lx3k9abc12 \
-  -H "Authorization: Bearer $CLIPSTOYOU_KEY" \
-  -H "Content-Type: application/json" \
-  -H "Accept: application/json" \
-  -d '{"duracion": 60}'
-
-# → {"downloadUrl":"/descargas-partes/3f2c…","partes":13}</code></pre>
-
-    <h3><span class="metodo">3b.</span> <span class="endpoint">GET /api/job916/{jobId}/download</span></h3>
-    <p data-lang="es">Si solo quieres el vídeo 9:16 entero, sin dividir.</p>
-    <p data-lang="en">If you only want the whole 9:16 video, not split.</p>
-    <pre><code>curl -L -o video_9_16.mp4 https://www.clipstoyou.com/api/job916/lx3k9abc12/download \
-  -H "Authorization: Bearer $CLIPSTOYOU_KEY"</code></pre>
-
-    <h3><span class="metodo">4.</span> <span class="endpoint">GET {downloadUrl}</span></h3>
-    <p data-lang="es">Descarga el ZIP con las partes ordenadas (<code>nombre - parte 1.mp4</code>, <code>parte 2</code>…).</p>
-    <p data-lang="en">Download the ZIP with the ordered parts (<code>name - parte 1.mp4</code>, <code>parte 2</code>…).</p>
-    <pre><code>curl -L -o partes.zip https://www.clipstoyou.com/descargas-partes/3f2c… \
-  -H "Authorization: Bearer $CLIPSTOYOU_KEY"</code></pre>
-
-    <h3><span class="endpoint">POST /dividir</span></h3>
-    <p data-lang="es">Divide un vídeo sin convertirlo a 9:16. Multipart con <code>video</code> y <code>duracion</code>; con <code>Accept: application/json</code> devuelve <code>downloadUrl</code> igual que el paso 3a.</p>
-    <p data-lang="en">Split a video without converting it to 9:16. Multipart with <code>video</code> and <code>duracion</code>; with <code>Accept: application/json</code> it returns <code>downloadUrl</code> like step 3a.</p>
-
-    <h3 data-lang="es">Caducidad y errores</h3>
-    <h3 data-lang="en">Expiry and errors</h3>
-    <ul data-lang="es">
-      <li>Los vídeos convertidos y los ZIP se borran del servidor a los 30 minutos. Descárgalos antes.</li>
-      <li><code>401</code> clave inválida o revocada · <code>403</code> tu plan no incluye la API · <code>429</code> límite del plan alcanzado · <code>404</code> trabajo o descarga caducados.</li>
-      <li>Todas las respuestas de error son JSON: <code>{"error": "mensaje"}</code>.</li>
-    </ul>
-    <ul data-lang="en">
-      <li>Converted videos and ZIPs are deleted from the server after 30 minutes. Download them before that.</li>
-      <li><code>401</code> invalid or revoked key · <code>403</code> your plan doesn't include the API · <code>429</code> plan limit reached · <code>404</code> job or download expired.</li>
-      <li>All error responses are JSON: <code>{"error": "message"}</code>.</li>
-    </ul>
-
-    <!-- IA -->
-    <h2 data-lang="es">Usarlo con Claude o ChatGPT</h2>
-    <h2 data-lang="en">Using it with Claude or ChatGPT</h2>
-    <p data-lang="es">Instala el conector de ClipsToYou en tu app de escritorio (Claude Desktop, ChatGPT Desktop u otra compatible con MCP). La IA podrá coger vídeos de tus carpetas, convertirlos a 9:16, dividirlos y dejar los clips en tu PC, y combinarlo con otras herramientas que tengas conectadas, como tu app para programar publicaciones.</p>
-    <p data-lang="en">Install the ClipsToYou connector in your desktop app (Claude Desktop, ChatGPT Desktop or any other MCP-compatible app). The AI will be able to pick videos from your folders, convert them to 9:16, split them and leave the clips on your PC, and combine that with other tools you have connected, like your post-scheduling app.</p>
-
-    <h3 data-lang="es">1. Requisito: Node.js</h3>
-    <h3 data-lang="en">1. Requirement: Node.js</h3>
-    <p data-lang="es">Instala <a href="https://nodejs.org" target="_blank" rel="noopener">Node.js</a> 20 o superior (versión LTS).</p>
-    <p data-lang="en">Install <a href="https://nodejs.org" target="_blank" rel="noopener">Node.js</a> 20 or newer (LTS version).</p>
-
-    <h3 data-lang="es">2. Añade el conector</h3>
-    <h3 data-lang="en">2. Add the connector</h3>
-    <p data-lang="es">En Claude Desktop: Configuración → Desarrollador → Editar configuración, y añade esto con tu clave:</p>
-    <p data-lang="en">In Claude Desktop: Settings → Developer → Edit Config, and add this with your key:</p>
-    <pre><code>{
+    <details>
+      <summary><span data-lang="es">Cómo conectarla con Claude o ChatGPT Desktop</span><span data-lang="en">How to connect it to Claude or ChatGPT Desktop</span></summary>
+      <pre>{
   "mcpServers": {
     "clipstoyou": {
       "command": "npx",
       "args": ["-y", "clipstoyou-mcp"],
-      "env": { "CLIPSTOYOU_API_KEY": "ctu_tu_clave" }
+      "env": { "CLIPSTOYOU_API_KEY": "ctu_..." }
     }
   }
-}</code></pre>
-    <p data-lang="es">Reinicia la app. En otras apps compatibles con MCP usa el mismo comando (<code>npx -y clipstoyou-mcp</code>) y la variable <code>CLIPSTOYOU_API_KEY</code>.</p>
-    <p data-lang="en">Restart the app. In other MCP-compatible apps use the same command (<code>npx -y clipstoyou-mcp</code>) and the <code>CLIPSTOYOU_API_KEY</code> variable.</p>
-
-    <h3 data-lang="es">3. Pídeselo a la IA</h3>
-    <h3 data-lang="en">3. Ask the AI</h3>
-    <pre data-lang="es"><code>Mira qué vídeos hay pendientes en C:\Users\yo\Videos\YouTube.
-Pásalos a 9:16 con fondo desenfocado y divídelos en clips de 2 minutos.
-Cuando estén listos, programa con mi app de publicaciones la parte 1
-a las 14:00, la parte 2 a las 16:00 y la última a las 22:00.</code></pre>
-    <pre data-lang="en"><code>Check which videos are pending in C:\Users\me\Videos\YouTube.
-Convert them to 9:16 with a blurred background and split them into 2-minute clips.
-When they're ready, use my scheduling app to post part 1 at 2 pm,
-part 2 at 4 pm and the last one at 10 pm.</code></pre>
-    <p data-lang="es">El conector guarda el vídeo 9:16 con el mismo nombre en <code>Videos 9-16</code> y los clips en <code>Clips\&lt;nombre del vídeo&gt;\&lt;nombre&gt; - parte N.mp4</code>, junto a la carpeta original (puedes pedirle otras carpetas). Funciones: <code>listar_videos_pendientes</code>, <code>procesar_video</code>, <code>estado_proceso</code> y <code>estado_cuenta</code>.</p>
-    <p data-lang="en">The connector saves the 9:16 video with the same name in <code>Videos 9-16</code> and the clips in <code>Clips\&lt;video name&gt;\&lt;name&gt; - parte N.mp4</code>, next to the original folder (you can ask for other folders). Tools: <code>listar_videos_pendientes</code>, <code>procesar_video</code>, <code>estado_proceso</code> and <code>estado_cuenta</code>.</p>
+}</pre>
+    </details>
   </main>
   <footer>© 2025 ClipsToYou — <a href="/">Volver al inicio / Back to home</a></footer>
 
   <script>
-    const btnLang = document.getElementById('btnLang');
+    const $ = id => document.getElementById(id);
+    const tx = (es, en) => document.documentElement.lang === 'es' ? es : en;
+
     function setLang(lang) {
       document.documentElement.lang = lang;
-      btnLang.textContent = lang === 'es' ? 'EN' : 'ES';
-      document.getElementById('nombreClave').placeholder = lang === 'es' ? 'Nombre (ej: Claude en mi PC)' : 'Name (e.g. Claude on my PC)';
+      $('btnLang').textContent = lang === 'es' ? 'EN' : 'ES';
+      $('nombreClave').placeholder = tx('Nombre (opcional)', 'Name (optional)');
+      $('btnCopiar').textContent = tx('Copiar', 'Copy');
+      if (claves) pintar(claves);
       try { localStorage.setItem('idioma', lang); } catch (_) {}
     }
-    btnLang.addEventListener('click', () => setLang(document.documentElement.lang === 'es' ? 'en' : 'es'));
-    try { if (localStorage.getItem('idioma') === 'en') setLang('en'); } catch (_) {}
+    $('btnLang').addEventListener('click', () => setLang(document.documentElement.lang === 'es' ? 'en' : 'es'));
 
-    const tx = (es, en) => document.documentElement.lang === 'es' ? es : en;
-    const errorBox = document.getElementById('errorClaves');
-    function mostrarError(msg) { errorBox.textContent = msg; errorBox.style.display = 'block'; }
+    function mostrarError(msg) { $('error').textContent = msg; $('error').style.display = 'block'; }
+    function limpiarError() { $('error').style.display = 'none'; }
 
-    function fecha(iso) {
-      return iso ? new Date(iso).toLocaleString(document.documentElement.lang) : '—';
+    async function peticion(url, opciones) {
+      const res = await fetch(url, opciones);
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) throw new Error(data.error || tx('Algo ha fallado. Inténtalo de nuevo.', 'Something went wrong. Please try again.'));
+      return data;
     }
 
-    function pintarClaves(claves) {
-      const tbody = document.querySelector('#tablaClaves tbody');
-      tbody.replaceChildren();
-      document.getElementById('sinClaves').style.display = claves.length ? 'none' : 'block';
-      document.getElementById('tablaClaves').style.display = claves.length ? '' : 'none';
-      for (const c of claves) {
-        const tr = document.createElement('tr');
-        const celdas = [c.nombre, c.prefijo + '…', fecha(c.last_used_at)];
-        for (const texto of celdas) {
-          const td = document.createElement('td');
-          td.textContent = texto;
-          tr.appendChild(td);
-        }
-        const td = document.createElement('td');
-        const btn = document.createElement('button');
-        btn.className = 'btn-sec btn-rojo';
-        btn.textContent = tx('Revocar', 'Revoke');
-        btn.addEventListener('click', () => revocar(c));
-        td.appendChild(btn);
-        tr.appendChild(td);
-        tbody.appendChild(tr);
-      }
-    }
+    let claves = null;
 
-    async function cargarClaves() {
-      const res = await fetch('/api/keys');
-      if (!res.ok) throw new Error((await res.json()).error);
-      pintarClaves(await res.json());
-    }
+    function pintar(lista) {
+      claves = lista;
+      const cont = $('lista');
+      cont.replaceChildren();
+      $('vacio').style.display = lista.length ? 'none' : 'block';
+      cont.style.display = lista.length ? '' : 'none';
+      const fecha = iso => new Date(iso).toLocaleDateString(document.documentElement.lang);
+      for (const c of lista) {
+        const item = document.createElement('div');
+        item.className = 'item';
 
-    async function revocar(clave) {
-      if (!confirm(tx(`¿Revocar la clave "${clave.nombre}"? Lo que la use dejará de funcionar.`,
-                      `Revoke key "${clave.nombre}"? Anything using it will stop working.`))) return;
-      errorBox.style.display = 'none';
-      const res = await fetch('/api/keys/' + encodeURIComponent(clave.id), { method: 'DELETE' });
-      if (!res.ok) return mostrarError((await res.json()).error);
-      cargarClaves().catch(e => mostrarError(e.message));
-    }
+        const info = document.createElement('div');
+        info.className = 'info';
+        const nombre = document.createElement('div');
+        nombre.className = 'nombre';
+        nombre.textContent = c.nombre;
+        const estado = document.createElement('span');
+        estado.className = 'estado ' + (c.activa ? 'on' : 'off');
+        estado.textContent = c.activa ? tx('Activa', 'Active') : tx('Pausada', 'Paused');
+        nombre.appendChild(estado);
+        const meta = document.createElement('div');
+        meta.className = 'meta';
+        meta.textContent = `${c.prefijo}… · ${tx('creada', 'created')} ${fecha(c.created_at)}` +
+          (c.last_used_at ? ` · ${tx('último uso', 'last used')} ${fecha(c.last_used_at)}` : '');
+        info.append(nombre, meta);
 
-    document.getElementById('btnCrear').addEventListener('click', async () => {
-      const btn = document.getElementById('btnCrear');
-      errorBox.style.display = 'none';
-      btn.disabled = true;
-      try {
-        const res = await fetch('/api/keys', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ nombre: document.getElementById('nombreClave').value })
+        const pausar = document.createElement('button');
+        pausar.className = 'btn-sec';
+        pausar.textContent = c.activa ? tx('Pausar', 'Pause') : tx('Reanudar', 'Resume');
+        pausar.addEventListener('click', () => accion(() => peticion('/api/keys/' + encodeURIComponent(c.id), {
+          method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ activa: !c.activa })
+        })));
+
+        const eliminar = document.createElement('button');
+        eliminar.className = 'btn-sec btn-rojo';
+        eliminar.textContent = tx('Eliminar', 'Delete');
+        eliminar.addEventListener('click', () => {
+          if (!confirm(tx(`¿Eliminar "${c.nombre}"? Dejará de funcionar para siempre.`, `Delete "${c.nombre}"? It will stop working for good.`))) return;
+          accion(() => peticion('/api/keys/' + encodeURIComponent(c.id), { method: 'DELETE' }));
         });
-        const data = await res.json();
-        if (!res.ok) return mostrarError(data.error);
-        document.getElementById('valorClave').textContent = data.key;
-        document.getElementById('nuevaClave').style.display = 'block';
-        document.getElementById('btnCopiar').textContent = tx('Copiar', 'Copy');
-        document.getElementById('nombreClave').value = '';
-        await cargarClaves();
+
+        item.append(info, pausar, eliminar);
+        cont.appendChild(item);
+      }
+    }
+
+    async function cargar() { pintar(await peticion('/api/keys')); }
+
+    async function accion(fn) {
+      limpiarError();
+      try { await fn(); await cargar(); } catch (e) { mostrarError(e.message); }
+    }
+
+    $('btnCrear').addEventListener('click', async () => {
+      limpiarError();
+      $('btnCrear').disabled = true;
+      try {
+        const data = await peticion('/api/keys', {
+          method: 'POST', headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ nombre: $('nombreClave').value })
+        });
+        $('valorClave').textContent = data.key;
+        $('btnCopiar').textContent = tx('Copiar', 'Copy');
+        $('nueva').style.display = 'block';
+        $('nombreClave').value = '';
+        await cargar();
       } catch (e) {
-        mostrarError(tx('Error de conexión. Inténtalo de nuevo.', 'Connection error. Please try again.'));
+        mostrarError(e.message);
       } finally {
-        btn.disabled = false;
+        $('btnCrear').disabled = false;
       }
     });
 
-    document.getElementById('btnCopiar').addEventListener('click', async () => {
-      const btn = document.getElementById('btnCopiar');
+    $('btnCopiar').addEventListener('click', async () => {
       try {
-        await navigator.clipboard.writeText(document.getElementById('valorClave').textContent);
-        btn.textContent = tx('¡Copiada!', 'Copied!');
+        await navigator.clipboard.writeText($('valorClave').textContent);
+        $('btnCopiar').textContent = tx('¡Copiada!', 'Copied!');
       } catch (_) {
-        btn.textContent = tx('Selecciónala y cópiala a mano', 'Select it and copy manually');
+        $('btnCopiar').textContent = tx('Cópiala a mano', 'Copy it manually');
       }
     });
+
+    $('btnHecho').addEventListener('click', () => {
+      $('valorClave').textContent = '';
+      $('nueva').style.display = 'none';
+    });
+
+    let inicial = 'es';
+    try { if (localStorage.getItem('idioma') === 'en') inicial = 'en'; } catch (_) {}
+    setLang(inicial);
 
     fetch('/api/usuario').then(r => r.json()).then(u => {
-      if (!u.autenticado) {
-        document.getElementById('panelLogin').style.display = 'block';
-        return;
-      }
-      if (!u.isAdmin && !['pro', 'promax'].includes(u.plan)) {
-        document.getElementById('panelPlan').style.display = 'block';
-        return;
-      }
-      document.getElementById('panelClaves').style.display = 'block';
-      return cargarClaves();
-    }).catch(() => mostrarError(tx('No se pudieron cargar tus claves.', 'Could not load your keys.')));
+      if (!u.autenticado) return $('panelLogin').style.display = 'block';
+      if (!u.isAdmin && !['pro', 'promax'].includes(u.plan)) return $('panelPlan').style.display = 'block';
+      $('panelClaves').style.display = 'block';
+      return cargar();
+    }).catch(e => mostrarError(e.message));
   </script>
 </body>
 </html>

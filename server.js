@@ -69,15 +69,16 @@ app.use(async (req, res, next) => {
   if (!key.startsWith(API_KEY_PREFIX)) return res.status(401).json({ error: 'Clave API inválida.' });
 
   const { data: apiKey, error } = await supabase
-    .from('api_keys').select('id, usuario_id').eq('key_hash', hashApiKey(key)).maybeSingle();
+    .from('api_keys').select('*').eq('key_hash', hashApiKey(key)).maybeSingle();
   if (error) {
     console.error('API key lookup:', error.message);
     return res.status(503).json({ error: 'No se pudo verificar la clave API. Inténtalo de nuevo.' });
   }
-  if (!apiKey) return res.status(401).json({ error: 'Clave API inválida o revocada.' });
+  if (!apiKey) return res.status(401).json({ error: 'Clave API inválida o eliminada.' });
+  if (apiKey.activa === false) return res.status(403).json({ error: 'Esta clave API está pausada.' });
 
   const { data: usuario } = await supabase.from('usuarios').select('*').eq('id', apiKey.usuario_id).single();
-  if (!usuario) return res.status(401).json({ error: 'Clave API inválida o revocada.' });
+  if (!usuario) return res.status(401).json({ error: 'Clave API inválida o eliminada.' });
   if (!tieneAccesoApi(usuario)) return res.status(403).json({ error: ERROR_API_PLAN });
 
   req.user = usuario;
@@ -92,12 +93,24 @@ function soloSesionWeb(req, res, next) {
   next();
 }
 
+// select('*') keeps working whether or not the optional "activa" column exists yet.
+const clavePublica = ({ id, nombre, prefijo, created_at, last_used_at, activa }) =>
+  ({ id, nombre, prefijo, created_at, last_used_at, activa: activa !== false });
+
 app.get('/api/keys', soloSesionWeb, async (req, res) => {
   const { data, error } = await supabase
-    .from('api_keys').select('id, nombre, prefijo, created_at, last_used_at')
+    .from('api_keys').select('*')
     .eq('usuario_id', req.user.id).order('created_at', { ascending: false });
   if (error) return res.status(500).json({ error: 'No se pudieron cargar las claves.' });
-  res.json(data);
+  res.json(data.map(clavePublica));
+});
+
+app.patch('/api/keys/:id', soloSesionWeb, express.json(), async (req, res) => {
+  if (typeof req.body?.activa !== 'boolean') return res.status(400).json({ error: 'Valor inválido.' });
+  const { error } = await supabase.from('api_keys')
+    .update({ activa: req.body.activa }).eq('id', req.params.id).eq('usuario_id', req.user.id);
+  if (error) return res.status(500).json({ error: 'No se pudo actualizar la clave.' });
+  res.json({ ok: true });
 });
 
 app.post('/api/keys', soloSesionWeb, express.json(), async (req, res) => {
@@ -105,20 +118,20 @@ app.post('/api/keys', soloSesionWeb, express.json(), async (req, res) => {
   const { count, error: countError } = await supabase
     .from('api_keys').select('id', { count: 'exact', head: true }).eq('usuario_id', req.user.id);
   if (countError) return res.status(500).json({ error: 'No se pudo crear la clave.' });
-  if (count >= MAX_API_KEYS) return res.status(400).json({ error: `Máximo ${MAX_API_KEYS} claves. Revoca alguna antes de crear otra.` });
+  if (count >= MAX_API_KEYS) return res.status(400).json({ error: `Máximo ${MAX_API_KEYS} claves. Elimina alguna antes de crear otra.` });
 
   const nombre = String(req.body?.nombre || '').trim().slice(0, 50) || 'Mi clave';
-  const key = API_KEY_PREFIX + crypto.randomBytes(24).toString('base64url');
+  const key = API_KEY_PREFIX + crypto.randomBytes(32).toString('base64url');
   const { data, error } = await supabase.from('api_keys')
     .insert([{ usuario_id: req.user.id, nombre, prefijo: key.slice(0, 10), key_hash: hashApiKey(key) }])
-    .select('id, nombre, prefijo, created_at, last_used_at').single();
+    .select('*').single();
   if (error) return res.status(500).json({ error: 'No se pudo crear la clave.' });
-  res.json({ ...data, key });
+  res.json({ ...clavePublica(data), key });
 });
 
 app.delete('/api/keys/:id', soloSesionWeb, async (req, res) => {
   const { error } = await supabase.from('api_keys').delete().eq('id', req.params.id).eq('usuario_id', req.user.id);
-  if (error) return res.status(500).json({ error: 'No se pudo revocar la clave.' });
+  if (error) return res.status(500).json({ error: 'No se pudo eliminar la clave.' });
   res.json({ ok: true });
 });
 
@@ -349,6 +362,33 @@ function cleanSplitParts(directory) {
   } catch (_) {}
 }
 
+function duracionDeLog(log) {
+  const m = log.match(/Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/);
+  return m ? Math.round(+m[1] * 3600 + +m[2] * 60 + +m[3]) : null;
+}
+
+function leerInfoVideo(file) {
+  return new Promise(resolve => {
+    const proc = spawn(FFMPEG, ['-hide_banner', '-i', file]);
+    let log = '';
+    proc.stderr.on('data', d => { log += d; });
+    proc.on('error', () => resolve({}));
+    proc.on('close', () => {
+      const res = log.match(/Video:.*?(\d{2,5})x(\d{2,5})/);
+      resolve({ duracion: duracionDeLog(log), ancho: res ? +res[1] : null, alto: res ? +res[2] : null });
+    });
+  });
+}
+
+// Lets API clients pick "webcam in a corner" instead of drawing the crop box in the browser.
+const ESQUINAS_CAM = ['arriba-izquierda', 'arriba-derecha', 'abajo-izquierda', 'abajo-derecha'];
+function coordsCamEsquina(esquina, tamano, ancho, alto) {
+  const fraccion = { pequena: 0.2, mediana: 0.28, grande: 0.36 }[tamano] || 0.28;
+  const w = Math.round(ancho * fraccion);
+  const h = Math.min(alto, Math.round(w * 9 / 16));
+  return [esquina.endsWith('derecha') ? ancho - w : 0, esquina.startsWith('abajo') ? alto - h : 0, w, h];
+}
+
 // In-memory job store for background video processing
 const jobs916 = new Map();
 setInterval(() => {
@@ -420,15 +460,23 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
     }
     args = ['-i', inputFile, '-vf', filtro, '-c:v', 'libx264', '-preset', 'ultrafast', '-crf', '26', '-force_key_frames', 'expr:gte(t,n_forced*1)', '-c:a', 'aac', '-b:a', '128k', '-y', outputFile];
   } else {
-    const camCoords = ['camX','camY','camW','camH'].map(k => Math.round(Number(req.body[k])));
+    let camCoords = ['camX','camY','camW','camH'].map(k => Math.round(Number(req.body[k])));
+    let videoW = Math.round(Number(req.body.videoW)) || 0;
+    let videoH = Math.round(Number(req.body.videoH)) || 0;
+    if (camCoords.some(isNaN) && ESQUINAS_CAM.includes(req.body.camEsquina)) {
+      const info = await leerInfoVideo(inputFile);
+      if (info.ancho && info.alto) {
+        videoW = info.ancho;
+        videoH = info.alto;
+        camCoords = coordsCamEsquina(req.body.camEsquina, req.body.camTamano, videoW, videoH);
+      }
+    }
     if (camCoords.some(isNaN) || camCoords.some(v => v < 0)) {
       fs.unlinkSync(req.file.path);
       return res.status(400).json({ error: 'Coordenadas inválidas.' });
     }
     const [cx, cy, cw, ch] = camCoords;
     const camPosicion = req.body.camPosicion === 'arriba' ? 'arriba' : 'abajo';
-    const videoW = Math.round(Number(req.body.videoW)) || 0;
-    const videoH = Math.round(Number(req.body.videoH)) || 0;
 
     const filtroCam = `crop=${cw}:${ch}:${cx}:${cy},scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
     let filtroGameplay = `scale=1080:960:force_original_aspect_ratio=increase,crop=1080:960`;
@@ -489,8 +537,7 @@ app.post('/convertir-916', upload.single('video'), async (req, res) => {
       }
     }
 
-    const dur = stderrLog.match(/Duration: (\d+):(\d+):(\d+(?:\.\d+)?)/);
-    const duracionSegundos = dur ? Math.round(+dur[1] * 3600 + +dur[2] * 60 + +dur[3]) : null;
+    const duracionSegundos = duracionDeLog(stderrLog);
     jobs916.set(jobId, { ...jobs916.get(jobId), status: 'done', finishedAt: Date.now(), outputFile, duracionSegundos });
   });
 });
@@ -541,7 +588,12 @@ app.post('/dividir', upload.single('video'), async (req, res) => {
 
   if (!req.file) return res.status(400).json({ error: 'No se subió ningún video.' });
 
-  const duracion = parseInt(req.body.duracion);
+  let duracion = parseInt(req.body.duracion);
+  const partes = parseInt(req.body.partes);
+  if (!duracion && partes >= 1) {
+    const total = (await leerInfoVideo(req.file.path)).duracion;
+    if (total) duracion = Math.ceil(total / partes);
+  }
   if (!duracion || duracion < 1) {
     fs.unlinkSync(req.file.path);
     return res.status(400).json({ error: 'Duración inválida.' });

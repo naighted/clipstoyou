@@ -79,14 +79,46 @@ const espera = ms => new Promise(r => setTimeout(r, ms));
 const tareas = new Map();
 let cola = Promise.resolve();
 
+async function guardarClips(t, nombre, downloadUrl, extra) {
+  t.etapa = 'descargando los clips';
+  const carpetaClips = path.join(t.carpetaClips, nombre);
+  await fsp.mkdir(carpetaClips, { recursive: true });
+  const zip = path.join(os.tmpdir(), `clipstoyou_${t.id}.zip`);
+  try {
+    await descargar(downloadUrl, zip);
+    const clips = await extraerClips(zip, carpetaClips, nombre);
+    t.resultado = { ...t.resultado, ...extra, carpetaClips, clips };
+  } finally {
+    await fsp.rm(zip, { force: true });
+  }
+  t.estado = 'terminado';
+  t.etapa = null;
+}
+
+async function soloDividir(t, nombre) {
+  t.etapa = 'subiendo y dividiendo el vídeo';
+  const form = new FormData();
+  form.append('video', await fs.openAsBlob(t.video), path.basename(t.video));
+  if (t.duracionParte) form.append('duracion', String(t.duracionParte));
+  else form.append('partes', String(t.numeroPartes));
+  const { downloadUrl } = await (await api('/dividir', { method: 'POST', body: form })).json();
+  await guardarClips(t, nombre, downloadUrl, t.duracionParte ? { duracionParteSegundos: t.duracionParte } : {});
+}
+
 async function procesar(t) {
   const nombre = path.parse(t.video).name;
   t.estado = 'en curso';
+  if (!t.convertir) return soloDividir(t, nombre);
 
   t.etapa = 'subiendo el vídeo a ClipsToYou';
   const form = new FormData();
   form.append('video', await fs.openAsBlob(t.video), path.basename(t.video));
   form.append('modoCam', t.modo);
+  if (t.camara) {
+    form.append('camEsquina', t.camara.esquina);
+    form.append('camTamano', t.camara.tamano);
+    form.append('camPosicion', t.camara.en);
+  }
   const { jobId } = await (await api('/convertir-916', { method: 'POST', body: form })).json();
 
   t.etapa = 'convirtiendo a 9:16';
@@ -118,20 +150,7 @@ async function procesar(t) {
     body: JSON.stringify({ duracion })
   })).json();
 
-  t.etapa = 'descargando los clips';
-  const carpetaClips = path.join(t.carpetaClips, nombre);
-  await fsp.mkdir(carpetaClips, { recursive: true });
-  const zip = path.join(os.tmpdir(), `clipstoyou_${t.id}.zip`);
-  try {
-    await descargar(downloadUrl, zip);
-    const clips = await extraerClips(zip, carpetaClips, nombre);
-    t.resultado = { ...t.resultado, duracionParteSegundos: duracion, carpetaClips, clips };
-  } finally {
-    await fsp.rm(zip, { force: true });
-  }
-
-  t.estado = 'terminado';
-  t.etapa = null;
+  await guardarClips(t, nombre, downloadUrl, { duracionParteSegundos: duracion });
 }
 
 function encolar(t) {
@@ -178,10 +197,14 @@ server.registerTool('listar_videos_pendientes', {
 });
 
 server.registerTool('procesar_video', {
-  title: 'Convertir a 9:16 y dividir en clips',
+  title: 'Convertir a 9:16 y/o dividir en clips',
   description: [
     'Sube un vídeo local a ClipsToYou, lo convierte a 9:16, guarda el vídeo 9:16 con el mismo nombre en la carpeta de 9:16,',
     'lo divide en partes y guarda los clips como "<nombre> - parte N.mp4" en "<carpeta_clips>\\<nombre>".',
+    'Con convertir_916=false solo lo divide, sin cambiar el formato.',
+    'Opciones de 9:16 que puedes ofrecer al usuario: blur (vídeo entero con fondo desenfocado), sin-cam (recorte centrado a pantalla completa)',
+    'y con-cam (para streams: la webcam en una mitad y el juego en la otra; pregunta en qué esquina está su webcam, su tamaño aproximado',
+    'y si la quiere arriba o abajo en el vídeo final).',
     'Se ejecuta en segundo plano y devuelve un id: consulta su avance con estado_proceso cada 30-60 segundos.',
     'Un vídeo de 10 minutos puede tardar varios minutos según la conexión. Los vídeos se procesan de uno en uno.',
     `Si el usuario no indica cómo dividir, se usan partes de ${DURACION_PARTE_DEFECTO} segundos.`,
@@ -189,13 +212,18 @@ server.registerTool('procesar_video', {
   ].join(' '),
   inputSchema: {
     ruta_video: z.string().describe('Ruta absoluta del vídeo original (mp4, mov, avi, mkv o webm).'),
-    modo: z.enum(['blur', 'sin-cam']).default('blur').describe('blur: vídeo completo sobre fondo desenfocado. sin-cam: recorte centrado a pantalla completa.'),
+    convertir_916: z.boolean().default(true).describe('false = solo dividir, sin convertir a 9:16.'),
+    modo: z.enum(['blur', 'sin-cam', 'con-cam']).default('blur').describe('blur: vídeo completo sobre fondo desenfocado. sin-cam: recorte centrado a pantalla completa. con-cam: webcam y juego apilados.'),
+    camara_esquina: z.enum(['arriba-izquierda', 'arriba-derecha', 'abajo-izquierda', 'abajo-derecha']).optional().describe('Solo con-cam (obligatorio): esquina del vídeo original donde está la webcam.'),
+    camara_tamano: z.enum(['pequena', 'mediana', 'grande']).default('mediana').describe('Solo con-cam: ancho aproximado de la webcam en el original (20%, 28% o 36% del ancho).'),
+    camara_en: z.enum(['arriba', 'abajo']).default('abajo').describe('Solo con-cam: dónde va la webcam en el vídeo 9:16.'),
     duracion_parte_segundos: z.number().int().min(5).optional().describe('Duración de cada clip en segundos.'),
     numero_partes: z.number().int().min(1).max(100).optional().describe('Alternativa a duracion_parte_segundos: número de clips iguales.'),
     carpeta_916: z.string().optional().describe(`Carpeta para el vídeo 9:16. Por defecto "${CARPETA_916}" junto al vídeo original.`),
     carpeta_clips: z.string().optional().describe(`Carpeta para los clips. Por defecto "${CARPETA_CLIPS}" junto al vídeo original.`)
   }
-}, async ({ ruta_video, modo, duracion_parte_segundos, numero_partes, carpeta_916, carpeta_clips }) => {
+}, async ({ ruta_video, convertir_916, modo, camara_esquina, camara_tamano, camara_en, duracion_parte_segundos, numero_partes, carpeta_916, carpeta_clips }) => {
+  if (convertir_916 && modo === 'con-cam' && !camara_esquina) return fallo('Para con-cam indica camara_esquina (en qué esquina está la webcam).');
   const video = path.resolve(ruta_video);
   if (!EXTENSIONES.has(path.extname(video).toLowerCase())) return fallo('Formato no soportado. Usa mp4, mov, avi, mkv o webm.');
   try {
@@ -210,7 +238,8 @@ server.registerTool('procesar_video', {
   const carpeta = path.dirname(video);
   const t = {
     id: crypto.randomUUID().slice(0, 8),
-    video, modo,
+    video, modo: convertir_916 ? modo : null, convertir: convertir_916,
+    camara: modo === 'con-cam' ? { esquina: camara_esquina, tamano: camara_tamano, en: camara_en } : null,
     duracionParte: duracion_parte_segundos || (numero_partes ? null : DURACION_PARTE_DEFECTO),
     numeroPartes: numero_partes || null,
     carpeta916: carpeta_916 ? path.resolve(carpeta_916) : path.join(carpeta, CARPETA_916),
@@ -219,7 +248,7 @@ server.registerTool('procesar_video', {
     creadaEn: new Date().toISOString(), terminadaEn: null
   };
   encolar(t);
-  return json({ id: t.id, estado: t.estado, carpeta916: t.carpeta916, carpetaClips: path.join(t.carpetaClips, path.parse(video).name) });
+  return json({ id: t.id, estado: t.estado, carpeta916: t.convertir ? t.carpeta916 : null, carpetaClips: path.join(t.carpetaClips, path.parse(video).name) });
 });
 
 server.registerTool('estado_proceso', {
